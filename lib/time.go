@@ -16,18 +16,6 @@ func formatDateTime(ts pgtype.Timestamptz) string {
 	return ts.Time.In(time.UTC).Format(time.RFC3339)
 }
 
-func formatMaybeDate(d pgtype.Date) *string {
-	if !d.Valid {
-		return nil
-	}
-	res := formatDate(d)
-	return &res
-}
-
-func formatDate(d pgtype.Date) string {
-	return d.Time.Format(time.DateOnly)
-}
-
 func formatID[I ~int64 | ~int32](id I) string {
 	return strconv.FormatInt(int64(id), 10)
 }

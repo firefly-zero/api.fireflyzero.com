@@ -29,7 +29,6 @@ type OrderItem struct {
 }
 
 func addOrderItem(r josh.Req) josh.Resp {
-	myID := josh.Must(josh.GetSingleton[dbtypes.UserID](r))
 	queries := josh.Must(josh.GetSingleton[*db.Queries](r))
 
 	body, err := schemas.ReadBody[OrderItem](r, "order_item", "_add")
@@ -42,13 +41,29 @@ func addOrderItem(r josh.Req) josh.Resp {
 			Detail: "retail price can be provided only for donations",
 		})
 	}
+	if attrs.ProductSlug != "donation" {
+		return josh.BadRequest(josh.Error{
+			Detail: "only dontations are supported",
+		})
+	}
 
+	// TODO(@orsinium): Lock the column to prevent adding items to non-draft orders.
 	order, err := ensureOrder(r)
 	if err != nil {
 		return ServerErrorR(r, "failed to create order", err)
 	}
 
-	// ...
+	price := *attrs.RetailPrice
+	item, err := queries.CreateOrderItem(r.Context(), db.CreateOrderItemParams{
+		Order:       order.ID,
+		Product:     attrs.ProductSlug,
+		Release:     nil,
+		Quantity:    attrs.Quantity,
+		RetailPrice: price,
+	})
+	if err != nil {
+		return ServerErrorR(r, "failed to add product to the order", err)
+	}
 
 	return josh.Created(formatOrderItem(item))
 }
