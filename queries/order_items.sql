@@ -4,3 +4,6 @@ INSERT INTO "order_items"
 VALUES ($1, $2, $3, $4, $5)
 ON CONFLICT ("user") DO NOTHING
 RETURNING *;
+
+-- name: ListOrderItems :many
+SELECT * FROM "order_items" WHERE "order" = $1;

@@ -68,6 +68,30 @@ func addOrderItem(r josh.Req) josh.Resp {
 	return josh.Created(formatOrderItem(item))
 }
 
+func listOrderItems(r josh.Req) josh.Resp {
+	myID := josh.Must(josh.GetSingleton[dbtypes.UserID](r))
+	queries := josh.Must(josh.GetSingleton[*db.Queries](r))
+
+	order, err := queries.GetDraftOrder(r.Context(), myID)
+	if err == pgx.ErrNoRows {
+		return josh.Ok([]any{})
+	}
+	if err != nil {
+		return ServerErrorR(r, "failed to get order", err)
+	}
+
+	items, err := queries.ListOrderItems(r.Context(), order.ID)
+	if err != nil {
+		return ServerErrorR(r, "failed to get products in the order", err)
+	}
+
+	resps := make([]josh.Data[OrderItem], 0, len(items))
+	for _, item := range items {
+		resps = append(resps, formatOrderItem(item))
+	}
+	return josh.Ok(resps)
+}
+
 // Get the draft order, creating it if it doesn't exist.
 func ensureOrder(r josh.Req) (db.Order, error) {
 	myID := josh.Must(josh.GetSingleton[dbtypes.UserID](r))
