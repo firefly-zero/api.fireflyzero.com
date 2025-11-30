@@ -26,6 +26,7 @@ type Me struct {
 	Language  string `json:"language"`
 	Country   string `json:"country"`
 	Timezone  string `json:"timezone"`
+	Publisher bool   `json:"publisher"`
 	CreatedAt string `json:"created_at"`
 	UpdatedAt string `json:"updated_at"`
 }
@@ -313,6 +314,7 @@ func formatMe(me db.User) josh.Data[Me] {
 			Language:  me.Language,
 			Country:   me.Country,
 			Timezone:  tz,
+			Publisher: me.Publisher,
 			CreatedAt: formatDateTime(me.CreatedAt),
 			UpdatedAt: formatDateTime(me.UpdatedAt),
 		},

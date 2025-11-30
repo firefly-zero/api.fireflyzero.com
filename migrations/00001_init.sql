@@ -16,6 +16,11 @@ CREATE TABLE users (
     -- Timezone identifier.
     -- https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
     "timezone"          varchar(64)     NOT NULL CHECK ("timezone" <> ''),
+    -- If true, the user can create releases for apps in the catalog
+    -- that have the same author name. This flag prevents hijacking
+    -- of ownership for apps from the catalog whose authors are
+    -- not registered in the shop.
+    "publisher"         boolean         NOT NULL DEFAULT false,
     -- When the user was soft-deleted, if ever.
     "deleted_at"        timestamptz     NULL DEFAULT NULL,
 

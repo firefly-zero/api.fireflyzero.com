@@ -53,6 +53,7 @@ func init() {
 		P("country", country),
 		P("language", language2),
 		P("timezone", timezone),
+		P("publisher", Bool()),
 		P("created_at", datetime),
 		P("updated_at", datetime),
 	))
@@ -90,6 +91,14 @@ func init() {
 	productSlug := String(MinLen(3), MaxLen(33))
 	quantity := Int(Min(1), Max(100))
 	price := Int(Min(0), Max(10_000_00))
+	add("order_item", "", O(
+		P("product_slug", productSlug),
+		P("release_id", Nullable(id)),
+		P("quantity", quantity),
+		P("retail_price", price),
+		P("fullfilled", Bool()),
+	))
+
 	add("order_item", "_add", AnyOf(
 		O(
 			P("product_slug", StringConst("donation")),

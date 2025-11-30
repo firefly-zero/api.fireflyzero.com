@@ -49,11 +49,15 @@ func addOrderItem(r josh.Req) josh.Resp {
 	}
 
 	price := *attrs.RetailPrice
+	qty := attrs.Quantity
+	if qty == 0 { // Quantity is not specified for donations.
+		qty = 1
+	}
 	item, err := queries.CreateOrderItem(r.Context(), db.CreateOrderItemParams{
 		Order:       order.ID,
 		Product:     attrs.ProductSlug,
 		Release:     nil,
-		Quantity:    attrs.Quantity,
+		Quantity:    qty,
 		RetailPrice: price,
 	})
 	if err != nil {

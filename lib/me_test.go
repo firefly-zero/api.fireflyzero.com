@@ -53,6 +53,7 @@ func TestPostMe(t *testing.T) {
 			"language": "en",
 			"country": "NL",
 			"timezone": "Europe/Amsterdam",
+			"publisher": false,
 			"created_at": ANY,
 			"updated_at": ANY
 		}
