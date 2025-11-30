@@ -36,11 +36,6 @@ func addOrderItem(r josh.Req) josh.Resp {
 		return josh.BadRequest(josh.Error{Detail: err.Error()})
 	}
 	attrs := body.Attributes
-	if attrs.RetailPrice != nil && attrs.ProductSlug != "donation" {
-		return josh.BadRequest(josh.Error{
-			Detail: "retail price can be provided only for donations",
-		})
-	}
 	if attrs.ProductSlug != "donation" {
 		return josh.BadRequest(josh.Error{
 			Detail: "only dontations are supported",
