@@ -5,6 +5,9 @@ import "github.com/orsinium-labs/configenv"
 type Config struct {
 	PostgresURL string
 
+	// Supabase JWT token.
+	AuthSecret string
+
 	// The time when Docker image with the service was built.
 	BuildTime string
 
@@ -27,9 +30,6 @@ type Config struct {
 	// Secret connection string for sending events into Sentry.
 	SentryDSN string
 
-	SupabaseURL string
-	SupabaseKey string
-
 	// Secret key for sending OpenTelemetry data (logs, traces, metrics) into Honeykomb.
 	HoneycombKey string
 }
@@ -39,12 +39,11 @@ func (c *Config) ParseEnv(pairs []string) error {
 	vars := configenv.Vars{
 		"DEBUG":         configenv.Required(configenv.Bool(&c.Debug)),
 		"POSTGRES_URL":  configenv.Required(configenv.String(&c.PostgresURL)),
+		"AUTH_SECRET":   configenv.Required(configenv.String(&c.AuthSecret)),
 		"BUILD_TIME":    configenv.Required(configenv.String(&c.BuildTime)),
 		"COLOR":         configenv.Required(configenv.String(&c.Color)),
 		"SENTRY_DSN":    configenv.String(&c.SentryDSN),
 		"HONEYCOMB_KEY": configenv.String(&c.HoneycombKey),
-		"SUPABASE_URL":  configenv.String(&c.SupabaseURL),
-		"SUPABASE_KEY":  configenv.String(&c.SupabaseKey),
 		"ENV":           configenv.String(&c.Env),
 		"PORT":          configenv.Required(configenv.Int(&c.Port)),
 	}
