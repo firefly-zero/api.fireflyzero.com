@@ -53,7 +53,9 @@ CREATE TABLE releases (
     "notes"             text            NOT NULL,
 
     "created_at"        timestamptz     NOT NULL DEFAULT now(),
-    "updated_at"        timestamptz     NOT NULL DEFAULT now()
+    "updated_at"        timestamptz     NOT NULL DEFAULT now(),
+
+    UNIQUE ("product", "version")
 );
 
 CREATE TYPE order_status AS ENUM (
@@ -78,13 +80,16 @@ CREATE TYPE order_status AS ENUM (
 CREATE TABLE orders (
     "id"                bigint          GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     "user"              bigint          NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    "address"           bigint          NULL REFERENCES addresses(id) ON DELETE SET NULL,
+    "address"           bigint          NULL DEFAULT NULL REFERENCES addresses(id) ON DELETE SET NULL,
     "status"            order_status    NOT NULL DEFAULT 'draft',
     "paid"              boolean         NOT NULL DEFAULT false,
 
     "created_at"        timestamptz     NOT NULL DEFAULT now(),
     "updated_at"        timestamptz     NOT NULL DEFAULT now()
 );
+
+CREATE UNIQUE INDEX orders_unique_draft ON "orders" ("user") WHERE ("status" = 'draft');
+
 
 -- Specific products added in an order.
 CREATE TABLE order_items (
@@ -97,7 +102,9 @@ CREATE TABLE order_items (
     "fulfilled"         boolean         NOT NULL DEFAULT false,
 
     "created_at"        timestamptz     NOT NULL DEFAULT now(),
-    "updated_at"        timestamptz     NOT NULL DEFAULT now()
+    "updated_at"        timestamptz     NOT NULL DEFAULT now(),
+
+    UNIQUE ("order", "product")
 );
 
 -- Paid items that the user bought or free items that the user downloaded.
@@ -111,7 +118,9 @@ CREATE TABLE owned_products (
     "release"           bigint          NULL REFERENCES releases(id) ON DELETE SET NULL,
 
     "created_at"        timestamptz     NOT NULL DEFAULT now(),
-    "updated_at"        timestamptz     NOT NULL DEFAULT now()
+    "updated_at"        timestamptz     NOT NULL DEFAULT now(),
+
+    UNIQUE ("user", "quantity")
 )
 
 -- +goose StatementEnd

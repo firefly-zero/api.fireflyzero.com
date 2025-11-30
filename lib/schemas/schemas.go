@@ -14,6 +14,10 @@ const (
 )
 
 func init() {
+	id := Meta{
+		Validator: String(MinLen(1), MaxLen(18), Pattern(`^[1-9][0-9]*$`)),
+		Example:   jsony.SafeString("13"),
+	}
 	datetime := Meta{
 		Validator: String(MinLen(18), MaxLen(35), Pattern("^"+dtPattern+"$")),
 		Example:   jsony.SafeString("2024-09-29T12:46:34+01:00"),
@@ -62,6 +66,35 @@ func init() {
 		P("language", language2).Optional(),
 		P("country", country).Optional(),
 		P("timezone", timezone).Optional(),
+	))
+
+	orderStatus := Enum(
+		"draft",
+		"pending",
+		"in_process",
+		"fulfilled",
+		"on_hold",
+		"canceled",
+	)
+	add("order", "", O(
+		P("address_id", id),
+		P("status", orderStatus),
+		P("paid", Bool()),
+		P("created_at", datetime),
+		P("updated_at", datetime),
+	))
+	add("order", "_patch", O(
+		P("address_id", id).Optional(),
+	))
+
+	productSlug := String(MinLen(3), MaxLen(33))
+	quantity := Int(Min(1), Max(100))
+	price := Int(Min(0), Max(10_000_00))
+	add("order_item", "_add", O(
+		P("product_slug", productSlug),
+		P("release_id", Nullable(id)),
+		P("retail_price", Nullable(price)),
+		P("quantity", quantity),
 	))
 
 	errSchema := O(

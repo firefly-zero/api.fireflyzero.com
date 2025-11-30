@@ -8,5 +8,5 @@ type (
 	OrderID        int64
 	OrderItemID    int64
 	OwnedProductID int64
-	ProductSlug    int64
+	ProductSlug    string
 )

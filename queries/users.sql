@@ -1,5 +1,5 @@
 -- name: CreateUser :one
-INSERT INTO users
+INSERT INTO "users"
 ("name", "email", "country", "language", "timezone")
 VALUES ($1, $2, $3, $4, $5)
 RETURNING *;
@@ -32,11 +32,11 @@ RETURNING *;
 -- name: SoftDeleteUser :exec
 --
 -- Schedule the user to be deleted later.
-UPDATE users SET "deleted_at" = @now WHERE "id" = @id;
+UPDATE "users" SET "deleted_at" = @now WHERE "id" = @id;
 
 -- name: DeleteDeletedUsers :exec
 --
 -- Delete from DB old users marked as soft-deleted.
-DELETE FROM users
+DELETE FROM "users"
 WHERE "deleted_at" IS NOT NULL
 AND "deleted_at" < @before;
