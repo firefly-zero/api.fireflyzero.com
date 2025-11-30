@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/firefly-zero/api.fireflyzero.com/lib/db"
+	"github.com/firefly-zero/api.fireflyzero.com/lib/schemas"
 	"github.com/jackc/pgx/v5"
 	"github.com/orsinium-labs/josh"
 	"github.com/orsinium-labs/josh/middlewares"
@@ -59,7 +60,18 @@ func (s Server) RegisterEndpoints(mux *http.ServeMux) {
 }
 
 func (s Server) getRouter() josh.Router {
+	ValResp := schemas.ValidateResponse
 	router := josh.Router{
+		"/users/me": {
+			// Get all information about the current user.
+			GET: wrap(s, ValResp("me", getMe)),
+			// Register a new user.
+			POST: wrap(s, ValResp("me", addMe)),
+			// Update user.
+			PATCH: wrap(s, ValResp("me", updateMe)),
+			// Soft-delete user.
+			DELETE: wrap(s, deleteMe),
+		},
 		// Health checks.
 		"/healthz/live":  {GET: Live},
 		"/healthz/ready": {GET: Ready},
