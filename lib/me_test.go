@@ -38,7 +38,6 @@ func TestPostMe(t *testing.T) {
 	r := u.DoUser("POST", "/users/me", `{"data": {
 		"type": "me",
 		"attributes": {
-			"name": "grammar",
 			"language": "en",
 			"country": "NL",
 			"timezone": "Europe/Amsterdam"
@@ -49,11 +48,10 @@ func TestPostMe(t *testing.T) {
 		"id": ANY,
 		"attributes": {
 			"email": "grammar@example.com",
-			"name": "grammar",
 			"language": "en",
 			"country": "NL",
 			"timezone": "Europe/Amsterdam",
-			"publisher": false,
+			"author_ids": [],
 			"created_at": ANY,
 			"updated_at": ANY
 		}

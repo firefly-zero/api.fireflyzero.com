@@ -3,10 +3,11 @@
 
 CREATE TABLE users (
     "id"                bigint          GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    -- The unique username of the user.
-    "name"              varchar(32)     NOT NULL UNIQUE CHECK ("name" <> ''),
     "email"             varchar(128)    NOT NULL UNIQUE CHECK ("email" <> ''),
-
+    -- List of author IDs in the catalog that belong to the user.
+    -- Multiple users may share the same name. A name from the catalog
+    -- might not belong to any user in the shop.
+    "author_ids"        varchar(16)[]   NOT NULL DEFAULT '{}',
     -- ISO 3166-1 alpha-2 2-letter country code.
     -- https://en.wikipedia.org/wiki/ISO_639-1
     "country"           char(2)         NOT NULL,
@@ -16,11 +17,6 @@ CREATE TABLE users (
     -- Timezone identifier.
     -- https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
     "timezone"          varchar(64)     NOT NULL CHECK ("timezone" <> ''),
-    -- If true, the user can create releases for apps in the catalog
-    -- that have the same author name. This flag prevents hijacking
-    -- of ownership for apps from the catalog whose authors are
-    -- not registered in the shop.
-    "publisher"         boolean         NOT NULL DEFAULT false,
     -- When the user was soft-deleted, if ever.
     "deleted_at"        timestamptz     NULL DEFAULT NULL,
 
@@ -48,6 +44,7 @@ CREATE TABLE addresses (
 -- Releases for apps and games.
 CREATE TABLE releases (
     "id"                bigint          GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    -- The full ID of the app (author_id.app_id).
     "product"           varchar(33)     NOT NULL CHECK ("product" <> ''),
     -- Version number of the release (typically, SemVer).
     "version"           varchar(32)     NOT NULL CHECK ("version" <> ''),

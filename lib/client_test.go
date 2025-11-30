@@ -246,16 +246,14 @@ func (u *TestUser) fetchToken() {
 // Register the user associated with this test client.
 func (u *TestUser) Register() {
 	c := u.client
-	name := strings.Split(u.email, "@")[0]
-	reqBody := fmt.Sprintf(`{"data": {
+	reqBody := `{"data": {
 		"type": "me",
 		"attributes": {
-			"name": "%s",
 			"language": "en",
 			"country": "NL",
 			"timezone": "Europe/Amsterdam"
 		}
-	}}`, name)
+	}}`
 	r := u.DoUser("POST", "/users/me", reqBody)
 	EqBody(c.is, r, `{"data": ANY}`)
 	c.is.Equal(r.StatusCode, 201)

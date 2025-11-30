@@ -3,7 +3,6 @@ package lib
 import (
 	"context"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/firefly-zero/api.fireflyzero.com/lib/db"
@@ -21,14 +20,13 @@ import (
 const defaultTimezone = "Europe/Amsterdam"
 
 type Me struct {
-	Email     string `json:"email"`
-	Name      string `json:"name"`
-	Language  string `json:"language"`
-	Country   string `json:"country"`
-	Timezone  string `json:"timezone"`
-	Publisher bool   `json:"publisher"`
-	CreatedAt string `json:"created_at"`
-	UpdatedAt string `json:"updated_at"`
+	Email     string   `json:"email"`
+	AuthorIDs []string `json:"author_ids"`
+	Language  string   `json:"language"`
+	Country   string   `json:"country"`
+	Timezone  string   `json:"timezone"`
+	CreatedAt string   `json:"created_at"`
+	UpdatedAt string   `json:"updated_at"`
 }
 
 func withMe(h josh.Handler) josh.Handler {
@@ -37,7 +35,6 @@ func withMe(h josh.Handler) josh.Handler {
 		queries := josh.Must(josh.GetSingleton[*db.Queries](r))
 
 		myID := jwt.UserID
-		myName := jwt.UserName
 
 		isRegistration := r.Pattern == "POST /users/me"
 		if isRegistration {
@@ -50,7 +47,7 @@ func withMe(h josh.Handler) josh.Handler {
 			return h(r)
 		}
 
-		if myID == 0 || myName == "" {
+		if myID == 0 {
 			user, err := queries.GetUserByEmail(r.Context(), jwt.Email)
 			if err == pgx.ErrNoRows {
 				return josh.Unauthorized(josh.Error{
@@ -68,7 +65,6 @@ func withMe(h josh.Handler) josh.Handler {
 				})
 			}
 			myID = user.ID
-			myName = user.Name
 		}
 
 		r = josh.Must(josh.WithSingleton(r, myID))
@@ -80,9 +76,8 @@ func withMe(h josh.Handler) josh.Handler {
 			scope := hub.Scope()
 			if scope != nil {
 				scope.SetUser(sentry.User{
-					ID:       strID,
-					Email:    jwt.Email,
-					Username: myName,
+					ID:    strID,
+					Email: jwt.Email,
 				})
 			}
 		}
@@ -91,7 +86,6 @@ func withMe(h josh.Handler) josh.Handler {
 		span.SetAttributes(
 			semconv.UserEmail(jwt.Email),
 			semconv.UserID(strID),
-			semconv.UserName(myName),
 		)
 
 		return h(r)
@@ -126,12 +120,6 @@ func addMe(r josh.Req) josh.Resp {
 	attrs := body.Attributes
 
 	// Additional validation.
-	if reservedUsername(attrs.Name) {
-		return josh.BadRequest(josh.Error{
-			Detail: "user name is reserved and cannot be used",
-			Source: josh.SourcePointer("/data/attributes/name"),
-		})
-	}
 	_, err = queries.GetUserByEmail(r.Context(), jwt.Email)
 	if err != pgx.ErrNoRows {
 		if err != nil {
@@ -140,16 +128,6 @@ func addMe(r josh.Req) josh.Resp {
 		return josh.BadRequest(josh.Error{
 			Detail: "user with the given email is already registered",
 			Source: josh.SourcePointer("/data/attributes/email"),
-		})
-	}
-	_, err = queries.GetUserByUsernameI(r.Context(), attrs.Name)
-	if err != pgx.ErrNoRows {
-		if err != nil {
-			return ServerErrorR(r, "failed to check user name availability", err)
-		}
-		return josh.BadRequest(josh.Error{
-			Detail: "the given user name is already taken",
-			Source: josh.SourcePointer("/data/attributes/name"),
 		})
 	}
 
@@ -165,7 +143,6 @@ func addMe(r josh.Req) josh.Resp {
 	// Save the user in the DB.
 	params := db.CreateUserParams{
 		Email:    jwt.Email,
-		Name:     attrs.Name,
 		Language: normalizeLanguage(attrs.Language),
 		Country:  attrs.Country,
 		Timezone: attrs.Timezone,
@@ -264,57 +241,25 @@ func normalizeLanguage(lang string) string {
 	return baseS
 }
 
-func reservedUsername(name string) bool {
-	switch strings.ToLower(name) {
-	// roles
-	case "anonymous":
-	case "admin":
-	case "administrator":
-	case "moderator":
-	case "root":
-	// some swear words
-	case "penis":
-	case "fuck":
-	case "bitch":
-	// words used in UI ("domain language")
-	case "bot":
-	case "app":
-	case "apps":
-	case "game":
-	case "games":
-	case "user":
-	case "users":
-	case "order":
-	case "orders":
-	// JS keywords
-	case "null":
-	case "nil":
-	case "none":
-	case "nan":
-	case "number":
-	case "string":
-	default:
-		return false
-	}
-	return true
-}
-
 func formatMe(me db.User) josh.Data[Me] {
 	tz := me.Timezone
 	_, err := time.LoadLocation(tz)
 	if err != nil {
 		tz = defaultTimezone
 	}
+	authorIDs := me.AuthorIds
+	if authorIDs == nil {
+		authorIDs = []string{}
+	}
 	return josh.Data[Me]{
 		ID:   strconv.FormatInt(int64(me.ID), 10),
 		Type: "me",
 		Attributes: Me{
 			Email:     me.Email,
-			Name:      me.Name,
+			AuthorIDs: authorIDs,
 			Language:  me.Language,
 			Country:   me.Country,
 			Timezone:  tz,
-			Publisher: me.Publisher,
 			CreatedAt: formatDateTime(me.CreatedAt),
 			UpdatedAt: formatDateTime(me.UpdatedAt),
 		},

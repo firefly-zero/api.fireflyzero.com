@@ -6,11 +6,10 @@ import (
 )
 
 const (
-	datePattern   = `(19|20)[0-9][0-9]-[01][0-9]-[0-3][0-9]`
-	timePattern   = `[0-2][0-9]:[0-5][0-9]:[0-5][0-9]`
-	tzPattern     = `([+-][0-2][0-9]:[0-5][0-9]|Z)`
-	dtPattern     = datePattern + "T" + timePattern + tzPattern
-	base64Pattern = `[a-zA-Z0-9\+\/\=]+`
+	datePattern = `(19|20)[0-9][0-9]-[01][0-9]-[0-3][0-9]`
+	timePattern = `[0-2][0-9]:[0-5][0-9]:[0-5][0-9]`
+	tzPattern   = `([+-][0-2][0-9]:[0-5][0-9]|Z)`
+	dtPattern   = datePattern + "T" + timePattern + tzPattern
 )
 
 func init() {
@@ -28,15 +27,11 @@ func init() {
 		Example:     jsony.SafeString("mail@example.com"),
 		Description: "Used to match users between supabase and backend.",
 	}
-	userName := Meta{
-		Validator: String(
-			MinLen(2), MaxLen(32),
-			// Alphanumeric and may contain "_.-" but not at the beginning or end.
-			Pattern(`^[a-zA-Z0-9][a-zA-Z0-9_.-]*[a-zA-Z0-9]$`),
-		),
-		Example:     jsony.SafeString("snz"),
-		Description: "The unique display name.",
+	authorID := Meta{
+		Validator: String(MinLen(2), MaxLen(16)),
+		Example:   jsony.SafeString("lux"),
 	}
+	authorIDs := A(authorID, MaxItems(5))
 	language2 := Meta{
 		Validator:   String(MinLen(2), MaxLen(2), Pattern(`^[a-z]{2}$`)),
 		Example:     jsony.SafeString("en"),
@@ -49,16 +44,14 @@ func init() {
 	country := String(MinLen(2), MaxLen(2), Pattern(`^[A-Z][A-Z]$`))
 	add("me", "", O(
 		P("email", email),
-		P("name", userName),
+		P("author_ids", authorIDs),
 		P("country", country),
 		P("language", language2),
 		P("timezone", timezone),
-		P("publisher", Bool()),
 		P("created_at", datetime),
 		P("updated_at", datetime),
 	))
 	add("me", "_add", O(
-		P("name", userName),
 		P("language", language2),
 		P("country", country),
 		P("timezone", timezone),

@@ -1,7 +1,7 @@
 -- name: CreateUser :one
 INSERT INTO "users"
-("name", "email", "country", "language", "timezone")
-VALUES ($1, $2, $3, $4, $5)
+("email", "country", "language", "timezone")
+VALUES ($1, $2, $3, $4)
 RETURNING *;
 
 -- name: GetUserByEmail :one
@@ -9,14 +9,6 @@ SELECT * FROM "users" WHERE "email" = $1 LIMIT 1;
 
 -- name: GetUserByID :one
 SELECT * FROM "users" WHERE "id" = $1 LIMIT 1;
-
--- name: GetUserByUsernameI :one
---
--- Do case-insensitive search of user by username.
-SELECT * FROM "users" WHERE LOWER("name") = LOWER(@name) LIMIT 1;
-
--- name: ListUsernames :many
-SELECT "id", "name" FROM "users";
 
 -- name: UpdateUser :one
 UPDATE "users"
