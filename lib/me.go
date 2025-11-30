@@ -99,7 +99,6 @@ func withMe(h josh.Handler) josh.Handler {
 
 func getMe(r josh.Req) josh.Resp {
 	queries := josh.Must(josh.GetSingleton[*db.Queries](r))
-	clock := josh.Must(josh.GetSingleton[Clock](r))
 	myID := josh.Must(josh.GetSingleton[dbtypes.UserID](r))
 
 	me, err := queries.GetUserByID(r.Context(), myID)
@@ -112,12 +111,11 @@ func getMe(r josh.Req) josh.Resp {
 	if err != nil {
 		return ServerErrorR(r, "failed to get user info", err)
 	}
-	return josh.Ok(formatMe(clock, me))
+	return josh.Ok(formatMe(me))
 }
 
 func addMe(r josh.Req) josh.Resp {
 	queries := josh.Must(josh.GetSingleton[*db.Queries](r))
-	clock := josh.Must(josh.GetSingleton[Clock](r))
 	jwt := josh.Must(josh.GetSingleton[JWT](r))
 
 	body, err := schemas.ReadBody[Me](r, "me", "_add")
@@ -176,12 +174,11 @@ func addMe(r josh.Req) josh.Resp {
 		return ServerErrorR(r, "failed to create user", err)
 	}
 
-	return josh.Created(formatMe(clock, me))
+	return josh.Created(formatMe(me))
 }
 
 func updateMe(r josh.Req) josh.Resp {
 	queries := josh.Must(josh.GetSingleton[*db.Queries](r))
-	clock := josh.Must(josh.GetSingleton[Clock](r))
 	myID := josh.Must(josh.GetSingleton[dbtypes.UserID](r))
 
 	me, err := queries.GetUserByID(r.Context(), myID)
@@ -230,7 +227,7 @@ func updateMe(r josh.Req) josh.Resp {
 		return ServerErrorR(r, "failed to update user", err)
 	}
 
-	return josh.Ok(formatMe(clock, newMe))
+	return josh.Ok(formatMe(newMe))
 }
 
 func deleteMe(r josh.Req) josh.Resp {
@@ -256,20 +253,14 @@ func deleteMe(r josh.Req) josh.Resp {
 func normalizeLanguage(lang string) string {
 	parsed, err := language.Parse(lang)
 	if err != nil {
-		return "en-US"
+		return "en"
 	}
 	base, _ := parsed.Base()
 	baseS := base.String()
 	if len(baseS) != 2 {
-		baseS = "en"
+		return "en"
 	}
-
-	region, _ := parsed.Region()
-	regionS := region.String()
-	if len(regionS) != 2 {
-		regionS = "US"
-	}
-	return baseS + "-" + regionS
+	return baseS
 }
 
 func reservedUsername(name string) bool {
@@ -307,7 +298,7 @@ func reservedUsername(name string) bool {
 	return true
 }
 
-func formatMe(clock Clock, me db.User) josh.Data[Me] {
+func formatMe(me db.User) josh.Data[Me] {
 	tz := me.Timezone
 	_, err := time.LoadLocation(tz)
 	if err != nil {

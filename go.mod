@@ -4,7 +4,9 @@ go 1.25.4
 
 require (
 	github.com/getsentry/sentry-go/slog v0.40.0
+	github.com/google/go-cmp v0.7.0
 	github.com/lmittmann/tint v1.1.2
+	github.com/matryer/is v1.4.1
 	github.com/orsinium-labs/configenv v1.1.0
 	github.com/orsinium-labs/valdo v1.3.0
 	go.opentelemetry.io/contrib/bridges/otelslog v0.13.0

@@ -53,20 +53,9 @@ func withHeaders(h josh.Handler) josh.Handler {
 			return josh.BadRequest(josh.Error{Detail: "unsupported X-Api-Version"})
 		}
 
-		appPlatform := r.Header.Get("X-App-Platform")
-		if appPlatform == "" {
-			return josh.BadRequest(josh.Error{Detail: "X-App-Platform header is missing"})
-		}
-		appVersion := r.Header.Get("X-App-Version")
-		if appVersion == "" {
-			return josh.BadRequest(josh.Error{Detail: "X-App-Version header is missing"})
-		}
-
 		span := trace.SpanFromContext(r.Context())
 		span.SetAttributes(
 			semconv.ServiceVersion(apiVersion),
-			semconv.OSName(appPlatform),
-			semconv.UserAgentVersion(appVersion),
 		)
 
 		return h(r)

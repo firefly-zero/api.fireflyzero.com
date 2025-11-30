@@ -1,3 +1,5 @@
+-- +goose Up
+-- +goose StatementBegin
 
 CREATE TABLE users (
     "id"                bigint          GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -111,3 +113,16 @@ CREATE TABLE owned_products (
     "created_at"        timestamptz     NOT NULL DEFAULT now(),
     "updated_at"        timestamptz     NOT NULL DEFAULT now()
 )
+
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+DROP TABLE owned_products;
+DROP TABLE order_items;
+DROP TABLE orders;
+DROP TABLE releases;
+DROP TABLE addresses;
+DROP TABLE users;
+DROP TYPE order_status;
+-- +goose StatementEnd

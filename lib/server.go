@@ -32,7 +32,7 @@ type Server struct {
 }
 
 func wrap(s Server, h josh.Handler) http.HandlerFunc {
-	// h = withMe(h)
+	h = withMe(h)
 	h = middlewares.Auth(authValidator(s.Config.AuthSecret), h)
 	return wrapNoAuth(s, h)
 }

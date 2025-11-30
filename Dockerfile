@@ -18,6 +18,6 @@ RUN apk add --no-cache tzdata && \
 USER appuser
 COPY --from=build /app/api-bin /app/api-bin
 ARG BUILD_TIME
-ENV ICU_BUILD_TIME=$BUILD_TIME
+ENV API_BUILD_TIME=$BUILD_TIME
 WORKDIR /app
 CMD ["./api-bin"]
