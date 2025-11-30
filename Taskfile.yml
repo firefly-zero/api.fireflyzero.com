@@ -1,0 +1,14 @@
+# https://taskfile.dev
+version: "3"
+
+tasks:
+  catalog:clone:
+    status:
+      - test -f catalog.fireflyzero.com/README.md
+    cmds:
+      - git clone git@github.com:firefly-zero/catalog.fireflyzero.com.git
+  catalog:pull:
+    dir: catalog.fireflyzero.com
+    cmds:
+      - task: catalog:clone
+      - git pull
