@@ -2,6 +2,12 @@
 version: "3"
 
 tasks:
+  install:sqlc:
+    status:
+      - which sqlc
+    cmds:
+      - go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
+
   catalog:clone:
     status:
       - test -f catalog.fireflyzero.com/README.md
@@ -12,3 +18,13 @@ tasks:
     cmds:
       - task: catalog:clone
       - git pull
+  sqlc:
+    desc: run an sqlc (SQL queries generator) subcommand
+    cmds:
+      - task: install:sqlc
+      - sqlc {{.CLI_ARGS}}
+  sqlc:generate:
+    desc: generate Go binding for SQL queries
+    cmds:
+      - task: install:sqlc
+      - sqlc generate

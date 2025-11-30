@@ -14,6 +14,8 @@ CREATE TABLE users (
     -- Timezone identifier.
     -- https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
     "timezone"          varchar(64)     NOT NULL CHECK ("timezone" <> ''),
+    -- When the user was soft-deleted, if ever.
+    "deleted_at"        timestamptz     NULL DEFAULT NULL,
 
     "created_at"        timestamptz     NOT NULL DEFAULT now(),
     "updated_at"        timestamptz     NOT NULL DEFAULT now()
@@ -24,9 +26,9 @@ CREATE TABLE addresses (
     "id"                bigint          GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     "user"              bigint          NOT NULL REFERENCES users(id) ON DELETE CASCADE,
 
-    "line1"             text            NOT NULL CHECK ("line1" <> ''),
-    "line2"             text            NOT NULL,
-    "city"              text            NOT NULL CHECK ("city" <> ''),
+    "line1"             varchar(256)    NOT NULL CHECK ("line1" <> ''),
+    "line2"             varchar(256)    NOT NULL,
+    "city"              varchar(256)    NOT NULL CHECK ("city" <> ''),
     -- https://github.com/amckenna41/iso3166-2/tree/main/iso3166_2_resources
     "state"             varchar(16)     NULL,
     "country"           char(2)         NOT NULL CHECK ("country" <> ''),

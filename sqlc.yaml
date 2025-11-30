@@ -1,0 +1,78 @@
+version: "2"
+sql:
+  - engine: postgresql
+    queries: queries/
+    schema: migrations/
+    strict_function_checks: true
+    strict_order_by: true
+    database:
+      uri: ${API_POSTGRES_URL}
+    # Required to be able to run "sqlc generate" without DB running.
+    # In particular, from Dockerfile.
+    analyzer:
+      database: false
+    gen:
+      go:
+        package: db
+        out: lib/db
+        sql_package: pgx/v5
+        emit_sql_as_comment: true
+        emit_pointers_for_null_types: true
+        # omit_unused_structs: true
+        # query_parameter_limit: 2
+        overrides:
+          - column: users.id
+            go_type:
+              import: github.com/firefly-zero/api.fireflyzero.com/lib/dbtypes
+              type: UserID
+          - column: addresses.id
+            go_type:
+              import: github.com/firefly-zero/api.fireflyzero.com/lib/dbtypes
+              type: AddressID
+          - column: releases.id
+            go_type:
+              import: github.com/firefly-zero/api.fireflyzero.com/lib/dbtypes
+              type: ReleaseID
+          - column: releases.product
+            go_type:
+              import: github.com/firefly-zero/api.fireflyzero.com/lib/dbtypes
+              type: ProductSlug
+          - column: orders.user
+            go_type:
+              import: github.com/firefly-zero/api.fireflyzero.com/lib/dbtypes
+              type: UserID
+          - column: orders.address
+            go_type:
+              import: github.com/firefly-zero/api.fireflyzero.com/lib/dbtypes
+              type: AddressID
+              pointer: true
+          - column: order_items.id
+            go_type:
+              import: github.com/firefly-zero/api.fireflyzero.com/lib/dbtypes
+              type: OrderItemID
+          - column: order_items.product
+            go_type:
+              import: github.com/firefly-zero/api.fireflyzero.com/lib/dbtypes
+              type: ProductID
+          - column: order_items.release
+            go_type:
+              import: github.com/firefly-zero/api.fireflyzero.com/lib/dbtypes
+              type: ReleaseID
+              pointer: true
+          - column: owned_products.id
+            go_type:
+              import: github.com/firefly-zero/api.fireflyzero.com/lib/dbtypes
+              type: OwnedProductID
+          - column: owned_products.user
+            go_type:
+              import: github.com/firefly-zero/api.fireflyzero.com/lib/dbtypes
+              type: UserID
+          - column: owned_products.product
+            go_type:
+              import: github.com/firefly-zero/api.fireflyzero.com/lib/dbtypes
+              type: ProductSlug
+          - column: owned_products.release
+            go_type:
+              import: github.com/firefly-zero/api.fireflyzero.com/lib/dbtypes
+              type: ReleaseID
+              pointer: true
