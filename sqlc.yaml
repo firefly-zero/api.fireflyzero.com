@@ -53,7 +53,7 @@ sql:
           - column: order_items.product
             go_type:
               import: github.com/firefly-zero/api.fireflyzero.com/lib/dbtypes
-              type: ProductID
+              type: ReleaseID
           - column: order_items.release
             go_type:
               import: github.com/firefly-zero/api.fireflyzero.com/lib/dbtypes

@@ -1,12 +1,62 @@
 # https://taskfile.dev
 version: "3"
 
+dotenv:
+  - dev.env.sh
+  - .env
+
+env:
+  API_BUILD_TIME:
+    # https://stackoverflow.com/a/7216394
+    sh: date -u +"%Y-%m-%dT%H:%M:%S"
+
+vars:
+  DOCKER: '{{if eq OS "linux"}}sudo {{end}}docker'
+  COMPOSE: "{{.DOCKER}} compose --env-file=.env"
+
 tasks:
+  install:gofumpt:
+    status:
+      - which gofumpt
+    preconditions:
+      - sh: which go
+        msg: "please, install go"
+    cmds:
+      # https://github.com/mvdan/gofumpt
+      - go install mvdan.cc/gofumpt@latest
+  install:golangci-lint:
+    status:
+      - which golangci-lint
+    cmds:
+      # https://golangci-lint.run/welcome/install/#binaries
+      - >
+        curl -sSfL
+        https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh
+        | sh -s -- -b $(go env GOPATH)/bin v1.64.4
   install:sqlc:
     status:
       - which sqlc
     cmds:
       - go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
+
+  docker:build:
+    desc: build dev docker image
+    aliases: [build]
+    preconditions:
+      - sh: which docker
+        msg: "please, install docker"
+    cmds:
+      - "{{.COMPOSE}} build --build-arg BUILD_TIME=$API_BUILD_TIME {{.CLI_ARGS}}"
+  docker:up:
+    desc: run dev docker containers
+    aliases: [up]
+    cmds:
+      - "{{.COMPOSE}} up {{.CLI_ARGS}}"
+  docker:down:
+    desc: stop dev docker containers
+    aliases: [down]
+    cmds:
+      - "{{.COMPOSE}} down {{.CLI_ARGS}}"
 
   catalog:clone:
     status:
@@ -18,6 +68,29 @@ tasks:
     cmds:
       - task: catalog:clone
       - git pull
+
+  goose:
+    desc: "Run a goose (migrations management tool) subcommand"
+    cmds:
+      - go run ./migrations {{.CLI_ARGS}}
+  goose:create:
+    desc: create a new empty migration with the given name
+    cmds:
+      - test "{{.CLI_ARGS}}"
+      - go run ./migrations create {{.CLI_ARGS}} sql
+  goose:up:
+    desc: apply all pending migrations
+    cmds:
+      - go run ./migrations up
+  goose:down:
+    desc: unapply the latest migrations
+    cmds:
+      - go run ./migrations down
+  goose:wipe:
+    desc: clear the database by unapplying all migrations
+    cmds:
+      - go run ./migrations down-to 0
+
   sqlc:
     desc: run an sqlc (SQL queries generator) subcommand
     cmds:
@@ -28,3 +101,61 @@ tasks:
     cmds:
       - task: install:sqlc
       - sqlc generate
+
+  serve:
+    desc: run the dev server
+    cmds:
+      - task: goose:up
+      - task: sqlc:generate
+      - go run ./bin/serve
+  token:
+    desc: generate a new auth token
+    cmds:
+      - >
+        curl -H "Content-Type: application/json"
+        http://localhost:$API_PORT/dev/token?email=mail@orsinium.dev
+        | cut -d'"' -f 16
+  format:
+    desc: run all code formatters
+    cmds:
+      - task: install:gofumpt
+      - gofumpt -w .
+      - go mod edit -fmt
+      - go mod tidy
+  lint:golangci-lint:
+    cmds:
+      - task: install:golangci-lint
+      - task: sqlc:generate
+      - golangci-lint run --timeout 120s
+  lint:sqlc:
+    cmds:
+      - task: install:sqlc
+      - task: goose:up
+      - sqlc compile
+      - sqlc vet
+  lint:govulncheck:
+    cmds:
+      - task: install:govulncheck
+      - govulncheck ./...
+  lint:
+    desc: run all linters
+    cmds:
+      - task: sqlc:generate
+      - task: lint:golangci-lint
+      - task: lint:sqlc
+      # - task: lint:govulncheck
+  test:
+    desc: run all tests
+    cmds:
+      - task: goose:up
+      - task: sqlc:generate
+      - go test {{ .CLI_ARGS | default "-count=1 -cover -timeout 10s ./..." }}
+  all:
+    desc: run all code formatters, linters, and tests
+    cmds:
+      - task: format
+      - task: lint
+      - task: test
+  default:
+    cmds:
+      - task: all
