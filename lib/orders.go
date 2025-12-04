@@ -7,7 +7,7 @@ import (
 	"github.com/orsinium-labs/josh"
 )
 
-func withFriend(h josh.Handler) josh.Handler {
+func withOrder(h josh.Handler) josh.Handler {
 	return func(r josh.Req) josh.Resp {
 		queries := josh.Must(josh.GetSingleton[*db.Queries](r))
 		myID := josh.Must(josh.GetSingleton[dbtypes.UserID](r))

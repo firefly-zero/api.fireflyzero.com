@@ -84,6 +84,7 @@ func init() {
 	productSlug := String(MinLen(3), MaxLen(33))
 	quantity := Int(Min(1), Max(100))
 	price := Int(Min(0), Max(10_000_00))
+	donationPrice := Int(Min(1_00), Max(10_000_00))
 	add("order_item", "", O(
 		P("product_slug", productSlug),
 		P("release_id", Nullable(id)),
@@ -91,16 +92,26 @@ func init() {
 		P("retail_price", price),
 		P("fullfilled", Bool()),
 	))
-
 	add("order_item", "_add", AnyOf(
 		O(
 			P("product_slug", StringConst("donation")),
-			P("retail_price", price),
+			// Minimal donation is 1.00 €.
+			P("retail_price", donationPrice),
 		),
 		O(
 			P("product_slug", productSlug),
 			P("release_id", Nullable(id)),
 			P("quantity", quantity),
+		),
+	))
+	add("order_item", "_patch", AnyOf(
+		// Adjust or remove donation.
+		O(
+			P("retail_price", AnyOf(IntConst(0), donationPrice)),
+		),
+		// Add or remove quantifiable items.
+		O(
+			P("quantity", Int(Min(0), Max(100))),
 		),
 	))
 

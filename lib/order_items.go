@@ -1,6 +1,8 @@
 package lib
 
 import (
+	"strings"
+
 	"github.com/firefly-zero/api.fireflyzero.com/lib/db"
 	"github.com/firefly-zero/api.fireflyzero.com/lib/dbtypes"
 	"github.com/firefly-zero/api.fireflyzero.com/lib/schemas"
@@ -41,6 +43,12 @@ func addOrderItem(r josh.Req) josh.Resp {
 	}
 	attrs := body.Attributes
 
+	isApp := strings.Contains(string(attrs.ProductSlug), ".")
+	if isApp && attrs.Quantity != 1 {
+		return josh.BadRequest(josh.Error{
+			Detail: "you can buy only one copy of an app",
+		})
+	}
 	product, err := queries.GetProduct(r.Context(), attrs.ProductSlug)
 	if err == pgx.ErrNoRows {
 		_, err := queries.GetGroup(r.Context(), string(product.Slug))
@@ -64,7 +72,7 @@ func addOrderItem(r josh.Req) josh.Resp {
 	}
 
 	price := product.RetailPrice
-	if price == 0 {
+	if product.Slug == "donation" {
 		if attrs.RetailPrice == nil {
 			price = 5_00
 		} else {
@@ -72,7 +80,8 @@ func addOrderItem(r josh.Req) josh.Resp {
 		}
 	}
 	qty := attrs.Quantity
-	if qty == 0 { // Quantity is not specified for donations.
+	// Quantity is not specified in the request for donations.
+	if qty == 0 {
 		qty = 1
 	}
 	item, err := queries.CreateOrderItem(r.Context(), db.CreateOrderItemParams{
