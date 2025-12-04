@@ -6,3 +6,7 @@ RETURNING *;
 -- name: GetDraftOrder :one
 SELECT * FROM "orders"
 WHERE "user" = $1 AND "status" = 'draft';
+
+-- name: GetOrder :one
+SELECT * FROM "orders"
+WHERE "user" = $1 AND "id" = $2;

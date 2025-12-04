@@ -29,6 +29,9 @@ type OrderItem struct {
 	Fulfilled   bool                `json:"fulfilled"`
 }
 
+// POST /order/items
+//
+// Add an item into the pending order.
 func addOrderItem(r josh.Req) josh.Resp {
 	queries := josh.Must(josh.GetSingleton[*db.Queries](r))
 
@@ -86,7 +89,10 @@ func addOrderItem(r josh.Req) josh.Resp {
 	return josh.Created(formatOrderItem(item, product))
 }
 
-func listOrderItems(r josh.Req) josh.Resp {
+// GET /order/items
+//
+// List items in the draft order.
+func listDraftOrderItems(r josh.Req) josh.Resp {
 	myID := josh.Must(josh.GetSingleton[dbtypes.UserID](r))
 	queries := josh.Must(josh.GetSingleton[*db.Queries](r))
 
@@ -97,6 +103,25 @@ func listOrderItems(r josh.Req) josh.Resp {
 	if err != nil {
 		return ServerErrorR(r, "failed to get order", err)
 	}
+	return listItemsInOrder(r, order)
+}
+
+// GET /order/{order}/items
+//
+// List items in the given order.
+func listOrderItems(r josh.Req) josh.Resp {
+	order := josh.Must(josh.GetSingleton[db.Order](r))
+
+	if order.Status == db.OrderStatusDraft {
+		return josh.BadRequest(josh.Error{
+			Detail: "order is in draft",
+		})
+	}
+	return listItemsInOrder(r, order)
+}
+
+func listItemsInOrder(r josh.Req, order db.Order) josh.Resp {
+	queries := josh.Must(josh.GetSingleton[*db.Queries](r))
 
 	items, err := queries.ListOrderItems(r.Context(), order.ID)
 	if err != nil {

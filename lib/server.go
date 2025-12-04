@@ -73,8 +73,11 @@ func (s Server) getRouter() josh.Router {
 			DELETE: wrap(s, deleteMe),
 		},
 		"/order/items": {
-			GET:  wrap(s, ValResp("order_items", listOrderItems)),
+			GET:  wrap(s, ValResp("order_items", listDraftOrderItems)),
 			POST: wrap(s, ValResp("order_item", addOrderItem)),
+		},
+		"/order/{order}/items": {
+			GET: wrap(s, ValResp("order_items", withFriend(listOrderItems))),
 		},
 		// Health checks.
 		"/healthz/live":  {GET: Live},
