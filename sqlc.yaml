@@ -84,3 +84,7 @@ sql:
               import: github.com/firefly-zero/api.fireflyzero.com/lib/dbtypes
               type: ReleaseID
               pointer: true
+          - column: products.slug
+            go_type:
+              import: github.com/firefly-zero/api.fireflyzero.com/lib/dbtypes
+              type: ProductSlug

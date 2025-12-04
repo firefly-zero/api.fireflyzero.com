@@ -17,9 +17,16 @@ CREATE TABLE users (
     -- Timezone identifier.
     -- https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
     "timezone"          varchar(64)     NOT NULL CHECK ("timezone" <> ''),
+
+    -- How much money the author earned over all time.
+    "total_earnings"    integer         NOT NULL DEFAULT 0,
+    -- How much money the author earned since the last transfer.
+    "pending_earnings"  integer         NOT NULL DEFAULT 0,
+    -- When was the last time that we transfered money to the author.
+    "transfered_at"     timestamptz     NULL DEFAULT NULL,
+
     -- When the user was soft-deleted, if ever.
     "deleted_at"        timestamptz     NULL DEFAULT NULL,
-
     "created_at"        timestamptz     NOT NULL DEFAULT now(),
     "updated_at"        timestamptz     NOT NULL DEFAULT now()
 );
@@ -123,12 +130,48 @@ CREATE TABLE owned_products (
     "updated_at"        timestamptz     NOT NULL DEFAULT now(),
 
     UNIQUE ("user", "quantity")
-)
+);
+
+CREATE TABLE groups (
+    "slug"              varchar(33)     NOT NULL UNIQUE CHECK ("slug" <> ''),
+    "name"              varchar(120)    NOT NULL CHECK ("name" <> ''),
+
+    "created_at"        timestamptz     NOT NULL DEFAULT now(),
+    "updated_at"        timestamptz     NOT NULL DEFAULT now()
+);
+
+CREATE TABLE products (
+    "slug"              varchar(33)     NOT NULL UNIQUE CHECK ("slug" <> ''),
+    "group"             varchar(120)    NOT NULL DEFAULT '',
+    "name"              varchar(120)    NOT NULL CHECK ("name" <> ''),
+    "retail_price"      integer         NOT NULL CHECK ("retail_price" >= 0),
+
+    "created_at"        timestamptz     NOT NULL DEFAULT now(),
+    "updated_at"        timestamptz     NOT NULL DEFAULT now()
+);
+
+INSERT INTO "groups" ("slug", "name") VALUES ("t-shirt", "T-shirt");
+
+INSERT INTO "products"
+("slug", "group", "name", "retail_price")
+VALUES
+('donation',         '',        '♥️ Donate', 0),
+('device',           '',        '💡 Firefly Zero', 10000),
+('t-shirt-xs-black', 't-shirt', '⚫ Black (XS)', 2500),
+('t-shirt-s-black',  't-shirt', '⚫ Black (S)',  2500),
+('t-shirt-m-black',  't-shirt', '⚫ Black (M)',  2500),
+('t-shirt-l-black',  't-shirt', '⚫ Black (L)',  2500),
+('t-shirt-xs-white', 't-shirt', '⚪️ White (XS)', 2500),
+('t-shirt-s-white',  't-shirt', '⚪️ White (S)',  2500),
+('t-shirt-m-white',  't-shirt', '⚪️ White (M)',  2500),
+('t-shirt-l-white',  't-shirt', '⚪️ White (L)',  2500);
 
 -- +goose StatementEnd
 
 -- +goose Down
 -- +goose StatementBegin
+DROP TABLE products;
+DROP TABLE groups;
 DROP TABLE owned_products;
 DROP TABLE order_items;
 DROP TABLE orders;

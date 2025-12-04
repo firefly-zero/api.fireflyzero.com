@@ -21,6 +21,7 @@ const (
 )
 
 type OrderItem struct {
+	Name        string              `json:"name"`
 	ProductSlug dbtypes.ProductSlug `json:"product_slug"`
 	ReleaseID   *dbtypes.ReleaseID  `json:"release_id"`
 	Quantity    int32               `json:"quantity"`
@@ -36,10 +37,21 @@ func addOrderItem(r josh.Req) josh.Resp {
 		return josh.BadRequest(josh.Error{Detail: err.Error()})
 	}
 	attrs := body.Attributes
-	if attrs.ProductSlug != "donation" {
+
+	product, err := queries.GetProduct(r.Context(), attrs.ProductSlug)
+	if err == pgx.ErrNoRows {
+		_, err := queries.GetGroup(r.Context(), string(product.Slug))
+		if err == nil {
+			return josh.BadRequest(josh.Error{
+				Detail: "group slug cannot be used as product slug",
+			})
+		}
 		return josh.BadRequest(josh.Error{
-			Detail: "only dontations are supported",
+			Detail: "product not found",
 		})
+	}
+	if err != nil {
+		return ServerErrorR(r, "failed to create order", err)
 	}
 
 	// TODO(@orsinium): Lock the column to prevent adding items to non-draft orders.
@@ -48,7 +60,14 @@ func addOrderItem(r josh.Req) josh.Resp {
 		return ServerErrorR(r, "failed to create order", err)
 	}
 
-	price := *attrs.RetailPrice
+	price := product.RetailPrice
+	if price == 0 {
+		if attrs.RetailPrice == nil {
+			price = 5_00
+		} else {
+			price = *attrs.RetailPrice
+		}
+	}
 	qty := attrs.Quantity
 	if qty == 0 { // Quantity is not specified for donations.
 		qty = 1
@@ -64,7 +83,7 @@ func addOrderItem(r josh.Req) josh.Resp {
 		return ServerErrorR(r, "failed to add product to the order", err)
 	}
 
-	return josh.Created(formatOrderItem(item))
+	return josh.Created(formatOrderItem(item, product))
 }
 
 func listOrderItems(r josh.Req) josh.Resp {
@@ -86,7 +105,13 @@ func listOrderItems(r josh.Req) josh.Resp {
 
 	resps := make([]josh.Data[OrderItem], 0, len(items))
 	for _, item := range items {
-		resps = append(resps, formatOrderItem(item))
+		product, err := queries.GetProduct(r.Context(), item.Product)
+		if err != nil {
+			// No return, it's ok'ish to return
+			// the order item without product info.
+			ServerErrorR(r, "cannot find product", err)
+		}
+		resps = append(resps, formatOrderItem(item, product))
 	}
 	return josh.Ok(resps)
 }
@@ -103,11 +128,12 @@ func ensureOrder(r josh.Req) (db.Order, error) {
 	return queries.GetDraftOrder(r.Context(), myID)
 }
 
-func formatOrderItem(item db.OrderItem) josh.Data[OrderItem] {
+func formatOrderItem(item db.OrderItem, product db.Product) josh.Data[OrderItem] {
 	return josh.Data[OrderItem]{
 		ID:   formatID(item.ID),
 		Type: "order_item",
 		Attributes: OrderItem{
+			Name:        product.Name,
 			ProductSlug: item.Product,
 			ReleaseID:   item.Release,
 			Quantity:    item.Quantity,
