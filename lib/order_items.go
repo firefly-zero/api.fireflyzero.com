@@ -10,18 +10,6 @@ import (
 	"github.com/orsinium-labs/josh"
 )
 
-// https://docs.stripe.com/tax/tax-codes
-const (
-	// Video Gaming Console - Portable
-	taxConsole = "txcd_34022001"
-	// Cash Donation
-	taxDonation = "txcd_90000001"
-	// Video Games - downloaded - non subscription - with permanent rights
-	taxGame = "txcd_10201000"
-	// Clothing & Footwear
-	taxShirt = "txcd_30011000"
-)
-
 type OrderItem struct {
 	Name        string              `json:"name"`
 	ProductSlug dbtypes.ProductSlug `json:"product_slug"`
@@ -95,7 +83,7 @@ func addOrderItem(r josh.Req) josh.Resp {
 		})
 	}
 	if err != nil {
-		return ServerErrorR(r, "failed to create order", err)
+		return ServerErrorR(r, "failed to get product info", err)
 	}
 
 	// TODO(@orsinium): Lock the column to prevent adding items to non-draft orders.

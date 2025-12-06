@@ -32,6 +32,9 @@ type Config struct {
 
 	// Secret key for sending OpenTelemetry data (logs, traces, metrics) into Honeykomb.
 	HoneycombKey string
+
+	// Secret key for accessing Stripe (payment system).
+	StripeKey string
 }
 
 // Populate config from the passed env var pairs.
@@ -44,6 +47,7 @@ func (c *Config) ParseEnv(pairs []string) error {
 		"COLOR":         configenv.Required(configenv.String(&c.Color)),
 		"SENTRY_DSN":    configenv.String(&c.SentryDSN),
 		"HONEYCOMB_KEY": configenv.String(&c.HoneycombKey),
+		"STRIPE_KEY":    configenv.String(&c.StripeKey),
 		"ENV":           configenv.String(&c.Env),
 		"PORT":          configenv.Required(configenv.Int(&c.Port)),
 	}

@@ -114,6 +114,12 @@ func init() {
 			P("quantity", Int(Min(0), Max(100))),
 		),
 	))
+	add("checkout", "_req", O(
+		P("success_url", String(MinLen(11), MaxLen(200))),
+	))
+	add("checkout", "_resp", O(
+		P("redirect_url", String(MinLen(11), MaxLen(200))),
+	))
 
 	errSchema := O(
 		P("detail", Meta{

@@ -14,6 +14,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/orsinium-labs/josh"
 	"github.com/orsinium-labs/josh/middlewares"
+	"github.com/stripe/stripe-go/v84"
 )
 
 type Clock func() time.Time
@@ -29,6 +30,7 @@ type Server struct {
 	Queries *db.Queries
 	DB      Database
 	Clock   Clock
+	Stripe  *stripe.Client
 }
 
 func wrap(s Server, h josh.Handler) http.HandlerFunc {
@@ -71,6 +73,9 @@ func (s Server) getRouter() josh.Router {
 			PATCH: wrap(s, ValResp("me", updateMe)),
 			// Soft-delete user.
 			DELETE: wrap(s, deleteMe),
+		},
+		"/order/checkout": {
+			POST: wrap(s, ValResp("checkout_resp", checkout)),
 		},
 		"/order/items": {
 			GET:  wrap(s, ValResp("order_items", listDraftOrderItems)),

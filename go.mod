@@ -9,6 +9,7 @@ require (
 	github.com/matryer/is v1.4.1
 	github.com/orsinium-labs/configenv v1.1.0
 	github.com/orsinium-labs/valdo v1.3.0
+	github.com/stripe/stripe-go/v84 v84.0.0
 	go.opentelemetry.io/contrib/bridges/otelslog v0.13.0
 	go.opentelemetry.io/otel v1.38.0
 	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc v0.14.0

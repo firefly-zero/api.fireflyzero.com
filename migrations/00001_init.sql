@@ -71,7 +71,7 @@ CREATE TYPE order_status AS ENUM (
     -- The order is not paid yet. List of items can be adjusted.
     'draft',
     -- The customer is paying for the order or has paid for the order.
-    -- We have'nt started the fulfillment yet.
+    -- We haven't started the fulfillment yet.
     'pending',
     -- We started to fulfill the order.
     -- The order cannot be canceled anymore.

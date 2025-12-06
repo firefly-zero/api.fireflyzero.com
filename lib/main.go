@@ -15,6 +15,7 @@ import (
 	"github.com/getsentry/sentry-go"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rs/cors"
+	"github.com/stripe/stripe-go/v84"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/contrib/instrumentation/runtime"
 )
@@ -111,6 +112,7 @@ func setup(
 		Queries: queries,
 		DB:      dbpool,
 		Clock:   time.Now,
+		Stripe:  stripe.NewClient(config.StripeKey),
 	}
 	mux := http.NewServeMux()
 	server.RegisterEndpoints(mux)
