@@ -202,7 +202,7 @@ func patchOrderItem(r josh.Req) josh.Resp {
 		return adjustQuantity(r, *attrs.Quantity)
 	}
 	if attrs.RetailPrice != nil {
-		panic("todo")
+		return adjustRetailPrice(r, *attrs.RetailPrice)
 	}
 	return josh.NotModified()
 }
@@ -238,10 +238,59 @@ func adjustQuantity(r josh.Req, qty int32) josh.Resp {
 		if err != nil {
 			ServerErrorR(r, "cannot find product", err)
 		}
-		// ... patch
+		params := db.SetOrderItemQuantityParams{
+			Quantity: qty,
+			Order:    order.ID,
+			ID:       item.ID,
+		}
+		item, err := queries.SetOrderItemQuantity(r.Context(), params)
+		if err != nil {
+			ServerErrorR(r, "failed to adjust order item quantity", err)
+		}
 		return josh.Ok(formatOrderItem(item, product))
 	}
 	return josh.NotModified()
+}
+
+func adjustRetailPrice(r josh.Req, price int32) josh.Resp {
+	order := josh.Must(josh.GetSingleton[db.Order](r))
+	item := josh.Must(josh.GetSingleton[db.OrderItem](r))
+	queries := josh.Must(josh.GetSingleton[*db.Queries](r))
+
+	if item.Product == "donation" {
+		return josh.BadRequest(josh.Error{
+			Detail: "you can adjust the price only for donations",
+		})
+	}
+
+	if price == 0 {
+		err := queries.DeleteOrderItem(r.Context(), db.DeleteOrderItemParams{
+			Order: order.ID,
+			ID:    item.ID,
+		})
+		if err != nil {
+			return ServerErrorR(r, "failed to delete order item", err)
+		}
+		return josh.NoContent()
+	}
+	if price != item.RetailPrice {
+		product, err := queries.GetProduct(r.Context(), item.Product)
+		if err != nil {
+			ServerErrorR(r, "cannot find product", err)
+		}
+		params := db.SetOrderItemRetailPriceParams{
+			RetailPrice: price,
+			Order:       order.ID,
+			ID:          item.ID,
+		}
+		item, err := queries.SetOrderItemRetailPrice(r.Context(), params)
+		if err != nil {
+			ServerErrorR(r, "failed to adjust order item quantity", err)
+		}
+		return josh.Ok(formatOrderItem(item, product))
+	}
+	return josh.NotModified()
+
 }
 
 // Get the draft order, creating it if it doesn't exist.
