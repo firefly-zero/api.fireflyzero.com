@@ -31,6 +31,39 @@ type OrderItem struct {
 	Fulfilled   bool                `json:"fulfilled"`
 }
 
+type OrderItemPatch struct {
+	Quantity    *int32 `json:"quantity"`
+	RetailPrice *int32 `json:"retail_price"`
+}
+
+func withOrderItem(h josh.Handler) josh.Handler {
+	return func(r josh.Req) josh.Resp {
+		queries := josh.Must(josh.GetSingleton[*db.Queries](r))
+		order := josh.Must(josh.GetSingleton[db.Order](r))
+
+		itemID, errResp := josh.GetID[dbtypes.OrderItemID](r, "item")
+		if errResp != nil {
+			return josh.BadRequest(*errResp)
+		}
+		params := db.GetOrderItemParams{
+			Order: order.ID,
+			ID:    itemID,
+		}
+		item, err := queries.GetOrderItem(r.Context(), params)
+		if err == pgx.ErrNoRows {
+			return josh.NotFound(josh.Error{
+				Detail: "order item not found",
+				Code:   "order-item-404",
+			})
+		}
+		if err != nil {
+			return ServerErrorR(r, "failed to get order item", err)
+		}
+		r = josh.Must(josh.WithSingleton(r, item))
+		return h(r)
+	}
+}
+
 // POST /order/items
 //
 // Add an item into the pending order.
@@ -148,6 +181,67 @@ func listItemsInOrder(r josh.Req, order db.Order) josh.Resp {
 		resps = append(resps, formatOrderItem(item, product))
 	}
 	return josh.Ok(resps)
+}
+
+func patchOrderItem(r josh.Req) josh.Resp {
+	order := josh.Must(josh.GetSingleton[db.Order](r))
+
+	body, err := schemas.ReadBody[OrderItemPatch](r, "order_item", "_patch")
+	if err != nil {
+		return josh.BadRequest(josh.Error{Detail: err.Error()})
+	}
+	attrs := body.Attributes
+
+	if order.Status != db.OrderStatusDraft {
+		return josh.BadRequest(josh.Error{
+			Detail: "order is not in draft",
+		})
+	}
+
+	if attrs.Quantity != nil {
+		return adjustQuantity(r, *attrs.Quantity)
+	}
+	if attrs.RetailPrice != nil {
+		panic("todo")
+	}
+	return josh.NotModified()
+}
+
+func adjustQuantity(r josh.Req, qty int32) josh.Resp {
+	order := josh.Must(josh.GetSingleton[db.Order](r))
+	item := josh.Must(josh.GetSingleton[db.OrderItem](r))
+	queries := josh.Must(josh.GetSingleton[*db.Queries](r))
+
+	isApp := strings.Contains(string(item.Product), ".")
+	if isApp {
+		return josh.BadRequest(josh.Error{
+			Detail: "you can buy only one app",
+		})
+	}
+	if item.Product == "donation" {
+		return josh.BadRequest(josh.Error{
+			Detail: "you can adjust the amount of donation but not quantity",
+		})
+	}
+	if qty == 0 {
+		err := queries.DeleteOrderItem(r.Context(), db.DeleteOrderItemParams{
+			Order: order.ID,
+			ID:    item.ID,
+		})
+		if err != nil {
+			return ServerErrorR(r, "failed to delete order item", err)
+		}
+		return josh.NoContent()
+	}
+	if qty != item.Quantity {
+		product, err := queries.GetProduct(r.Context(), item.Product)
+		if err != nil {
+			ServerErrorR(r, "cannot find product", err)
+		}
+		// ... patch
+		return josh.Ok(formatOrderItem(item, product))
+	}
+	return josh.NotModified()
 }
 
 // Get the draft order, creating it if it doesn't exist.

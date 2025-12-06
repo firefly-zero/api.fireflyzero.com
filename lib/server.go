@@ -77,7 +77,8 @@ func (s Server) getRouter() josh.Router {
 			POST: wrap(s, ValResp("order_item", addOrderItem)),
 		},
 		"/order/{order}/items": {
-			GET: wrap(s, ValResp("order_items", withOrder(listOrderItems))),
+			GET:   wrap(s, ValResp("order_items", withOrder(listOrderItems))),
+			PATCH: wrap(s, ValResp("order_item", withOrder(withOrderItem(patchOrderItem)))),
 		},
 		// Health checks.
 		"/healthz/live":  {GET: Live},

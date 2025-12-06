@@ -7,3 +7,11 @@ RETURNING *;
 
 -- name: ListOrderItems :many
 SELECT * FROM "order_items" WHERE "order" = $1;
+
+-- name: GetOrderItem :one
+SELECT * FROM "order_items"
+WHERE "order" = $1 AND "id" = $2;
+
+-- name: DeleteOrderItem :exec
+DELETE FROM "order_items"
+WHERE "order" = $1 AND "id" = $2;
