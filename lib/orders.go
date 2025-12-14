@@ -13,6 +13,7 @@ import (
 
 type CheckoutReq struct {
 	SuccessURL string `json:"success_url"`
+	CancelURL  string `json:"cancel_url"`
 }
 
 type CheckoutResp struct {
@@ -90,11 +91,23 @@ func checkout(r josh.Req) josh.Resp {
 		lineItems = append(lineItems, &lineItem)
 	}
 
-	successURL := attrs.SuccessURL + "?order=" + formatID(order.ID)
+	orderIDStr := formatID(order.ID)
 	params := stripe.CheckoutSessionCreateParams{
+		Params: stripe.Params{
+			IdempotencyKey: ptr("order-checkout-" + orderIDStr),
+		},
 		Mode:       ptr(string(stripe.CheckoutSessionModePayment)),
-		SuccessURL: &successURL,
+		SuccessURL: ptr(formatOrderURL(attrs.SuccessURL, order.ID)),
+		CancelURL:  ptr(formatOrderURL(attrs.CancelURL, order.ID)),
 		LineItems:  lineItems,
+		Metadata: map[string]string{
+			"order_id": orderIDStr,
+		},
+		AllowPromotionCodes: ptr(false),
+		AutomaticTax: &stripe.CheckoutSessionCreateAutomaticTaxParams{
+			Enabled: ptr(true),
+		},
+		Currency: ptr(string(stripe.CurrencyEUR)),
 	}
 	session, err := client.V1CheckoutSessions.Create(r.Context(), &params)
 	if err != nil {
@@ -107,6 +120,10 @@ func checkout(r josh.Req) josh.Resp {
 			RedirectURL: session.URL,
 		},
 	})
+}
+
+func formatOrderURL(template string, id dbtypes.OrderID) string {
+	return strings.ReplaceAll(template, "{order}", formatID(id))
 }
 
 func makeProductData(p db.Product) stripe.CheckoutSessionCreateLineItemPriceDataProductDataParams {

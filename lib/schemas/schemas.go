@@ -116,6 +116,7 @@ func init() {
 	))
 	add("checkout", "_req", O(
 		P("success_url", String(MinLen(11), MaxLen(200))),
+		P("cancel_url", String(MinLen(11), MaxLen(200))),
 	))
 	add("checkout", "_resp", O(
 		P("redirect_url", String(MinLen(11), MaxLen(200))),
