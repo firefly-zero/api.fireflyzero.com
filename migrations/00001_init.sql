@@ -18,6 +18,7 @@ CREATE TABLE users (
     -- https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
     "timezone"          varchar(64)     NOT NULL CHECK ("timezone" <> ''),
 
+    "stripe_id"         varchar(128)    NULL DEFAULT NULL UNIQUE CHECK ("stripe_id" <> ''),
     -- How much money the author earned over all time.
     "total_earnings"    integer         NOT NULL DEFAULT 0,
     -- How much money the author earned since the last transfer.

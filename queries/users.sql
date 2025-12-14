@@ -16,6 +16,7 @@ SET
     "country"           = COALESCE(sqlc.narg(country),          "country"),
     "language"          = COALESCE(sqlc.narg(language),         "language"),
     "timezone"          = COALESCE(sqlc.narg(timezone),         "timezone"),
+    "stripe_id"         = COALESCE(sqlc.narg(stripe_id),        "stripe_id"),
 
     "updated_at"    = NOW()
 WHERE "id" = @id

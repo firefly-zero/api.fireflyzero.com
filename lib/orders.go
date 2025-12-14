@@ -1,7 +1,10 @@
 package lib
 
 import (
+	"context"
+	"fmt"
 	"strings"
+	"time"
 
 	"github.com/firefly-zero/api.fireflyzero.com/lib/db"
 	"github.com/firefly-zero/api.fireflyzero.com/lib/dbtypes"
@@ -91,6 +94,11 @@ func checkout(r josh.Req) josh.Resp {
 		lineItems = append(lineItems, &lineItem)
 	}
 
+	customerID, err := ensureCustomer(r.Context())
+	if err != nil {
+		return ServerErrorR(r, "failed to get Stripe customer", err)
+	}
+
 	orderIDStr := formatID(order.ID)
 	params := stripe.CheckoutSessionCreateParams{
 		Params: stripe.Params{
@@ -99,6 +107,7 @@ func checkout(r josh.Req) josh.Resp {
 		Mode:       ptr(string(stripe.CheckoutSessionModePayment)),
 		SuccessURL: ptr(formatOrderURL(attrs.SuccessURL, order.ID)),
 		CancelURL:  ptr(formatOrderURL(attrs.CancelURL, order.ID)),
+		Customer:   &customerID,
 		LineItems:  lineItems,
 		Metadata: map[string]string{
 			"order_id": orderIDStr,
@@ -120,6 +129,46 @@ func checkout(r josh.Req) josh.Resp {
 			RedirectURL: session.URL,
 		},
 	})
+}
+
+// Create Stripe customer for the user if it doesn't exist.
+//
+// Returns the Stripe customer ID.
+func ensureCustomer(ctx context.Context) (string, error) {
+	queries := josh.Must(josh.CGetSingleton[*db.Queries](ctx))
+	client := josh.Must(josh.CGetSingleton[*stripe.Client](ctx))
+	myID := josh.Must(josh.CGetSingleton[dbtypes.UserID](ctx))
+
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+	defer cancel()
+
+	me, err := queries.GetUserByID(ctx, myID)
+	if err != nil {
+		return "", fmt.Errorf("get user: %w", err)
+	}
+	if me.StripeID != nil {
+		return *me.StripeID, nil
+	}
+
+	customer, err := client.V1Customers.Create(ctx, &stripe.CustomerCreateParams{
+		Params: stripe.Params{
+			IdempotencyKey: ptr("create-customer-" + formatID(me.ID)),
+		},
+		Email: &me.Email,
+	})
+	if err != nil {
+		return "", fmt.Errorf("create customer: %w", err)
+	}
+
+	_, err = queries.UpdateUser(ctx, db.UpdateUserParams{
+		StripeID: &customer.ID,
+		ID:       myID,
+	})
+	if err != nil {
+		return "", fmt.Errorf("update user: %w", err)
+	}
+
+	return customer.ID, nil
 }
 
 func formatOrderURL(template string, id dbtypes.OrderID) string {
