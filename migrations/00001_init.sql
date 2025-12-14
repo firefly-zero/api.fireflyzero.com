@@ -18,6 +18,7 @@ CREATE TABLE users (
     -- https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
     "timezone"          varchar(64)     NOT NULL CHECK ("timezone" <> ''),
 
+    -- ID of the customer in Stripe.
     "stripe_id"         varchar(128)    NULL DEFAULT NULL UNIQUE CHECK ("stripe_id" <> ''),
     -- How much money the author earned over all time.
     "total_earnings"    integer         NOT NULL DEFAULT 0,
@@ -93,6 +94,8 @@ CREATE TABLE orders (
     "address"           bigint          NULL DEFAULT NULL REFERENCES addresses(id) ON DELETE SET NULL,
     "status"            order_status    NOT NULL DEFAULT 'draft',
     "paid"              boolean         NOT NULL DEFAULT false,
+    -- ID of the checkout session in Stripe.
+    "stripe_id"         varchar(128)    NULL DEFAULT NULL UNIQUE CHECK ("stripe_id" <> ''),
 
     "created_at"        timestamptz     NOT NULL DEFAULT now(),
     "updated_at"        timestamptz     NOT NULL DEFAULT now()
