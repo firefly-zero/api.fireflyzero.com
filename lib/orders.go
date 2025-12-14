@@ -153,46 +153,6 @@ func checkoutOrder(r josh.Req) josh.Resp {
 	})
 }
 
-func confirmOrder(r josh.Req) josh.Resp {
-	queries := josh.Must(josh.GetSingleton[*db.Queries](r))
-	client := josh.Must(josh.GetSingleton[*stripe.Client](r))
-	myID := josh.Must(josh.GetSingleton[dbtypes.UserID](r))
-	order := josh.Must(josh.GetSingleton[db.Order](r))
-
-	body, err := schemas.ReadBody[ConfirmReq](r, "confirm", "_req")
-	if err != nil {
-		return josh.BadRequest(josh.Error{Detail: err.Error()})
-	}
-	attrs := body.Attributes
-
-	session, err := client.V1CheckoutSessions.Retrieve(r.Context(), attrs.SessionID, nil)
-	if err != nil || session == nil {
-		return ServerErrorR(r, "failed to get checkout session info", err)
-	}
-	if session.PaymentStatus == stripe.CheckoutSessionPaymentStatusUnpaid {
-		return josh.BadRequest(josh.Error{
-			Detail: "the order is not paid",
-		})
-	}
-	if session.Metadata["order_id"] != formatID(order.ID) {
-		return josh.BadRequest(josh.Error{
-			Detail: "the checkout session was created for a different order",
-		})
-	}
-
-	order, err = queries.SetOrderPaid(r.Context(), db.SetOrderPaidParams{
-		ID:   order.ID,
-		User: myID,
-	})
-	if err != nil {
-		return ServerErrorR(r, "failed to mark the order as paid", err)
-	}
-
-	// TODO(@orsinium): auto-fullfill digital orders (apps, donations).
-
-	return josh.Ok(formatOrder(order))
-}
-
 // Create Stripe customer for the user if it doesn't exist.
 //
 // Returns the Stripe customer ID.

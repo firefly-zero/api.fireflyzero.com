@@ -64,6 +64,9 @@ func (s Server) RegisterEndpoints(mux *http.ServeMux) {
 func (s Server) getRouter() josh.Router {
 	ValResp := schemas.ValidateResponse
 	router := josh.Router{
+		"/webhooks/stripe": {
+			POST: wrapNoAuth(s, stripeWebhook),
+		},
 		"/users/me": {
 			// Get all information about the current user.
 			GET: wrap(s, ValResp("me", getMe)),
@@ -80,9 +83,6 @@ func (s Server) getRouter() josh.Router {
 		"/order/items": {
 			GET:  wrap(s, ValResp("order_items", listDraftOrderItems)),
 			POST: wrap(s, ValResp("order_item", addOrderItem)),
-		},
-		"/order/{order}/confirm": {
-			POST: wrap(s, ValResp("order", withOrder(confirmOrder))),
 		},
 		"/order/{order}/items": {
 			GET:   wrap(s, ValResp("order_items", withOrder(listOrderItems))),

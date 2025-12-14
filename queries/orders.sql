@@ -20,5 +20,5 @@ RETURNING *;
 -- name: SetOrderPaid :one
 UPDATE "orders"
 SET "paid" = true, "updated_at" = NOW()
-WHERE "id" = $1 AND "user" = $2
+WHERE "id" = $1
 RETURNING *;
