@@ -75,11 +75,14 @@ func (s Server) getRouter() josh.Router {
 			DELETE: wrap(s, deleteMe),
 		},
 		"/order/checkout": {
-			POST: wrap(s, ValResp("checkout_resp", checkout)),
+			POST: wrap(s, ValResp("checkout_resp", checkoutOrder)),
 		},
 		"/order/items": {
 			GET:  wrap(s, ValResp("order_items", listDraftOrderItems)),
 			POST: wrap(s, ValResp("order_item", addOrderItem)),
+		},
+		"/order/{order}/confirm": {
+			POST: wrap(s, ValResp("order", withOrder(confirmOrder))),
 		},
 		"/order/{order}/items": {
 			GET:   wrap(s, ValResp("order_items", withOrder(listOrderItems))),
