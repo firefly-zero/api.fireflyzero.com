@@ -20,10 +20,6 @@ CREATE TABLE users (
 
     -- ID of the customer in Stripe.
     "stripe_id"         varchar(128)    NULL DEFAULT NULL UNIQUE CHECK ("stripe_id" <> ''),
-    -- How much money the author earned over all time.
-    "total_earnings"    integer         NOT NULL DEFAULT 0,
-    -- How much money the author earned since the last transfer.
-    "pending_earnings"  integer         NOT NULL DEFAULT 0,
     -- When was the last time that we transfered money to the author.
     "transfered_at"     timestamptz     NULL DEFAULT NULL,
 
@@ -142,6 +138,20 @@ CREATE TABLE groups (
 
     "created_at"        timestamptz     NOT NULL DEFAULT now(),
     "updated_at"        timestamptz     NOT NULL DEFAULT now()
+);
+
+CREATE TYPE transaction_kind AS ENUM (
+    -- A customer paid for a product.
+    'payment',
+    -- We returned money to a customer.
+    'reimbursement',
+    'earning',
+    'withdrawal',
+);
+
+CREATE TABLE transactions (
+    "id"                bigint          GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    "created_at"        timestamptz     NOT NULL DEFAULT now()
 );
 
 CREATE TABLE products (

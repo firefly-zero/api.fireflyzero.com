@@ -68,6 +68,7 @@ func fulfillCheckout(queries *db.Queries, session stripe.CheckoutSession) error 
 		return fmt.Errorf("mark order as paid: %v", err)
 	}
 
-	// TODO(@orsinium): auto-fullfill digital orders (apps, donations).
+	// TODO(@orsinium): auto-fulfill digital orders (apps, donations).
+	// TODO(@orsinium): validate that items in order match line_items in Stripe.
 	return nil
 }
