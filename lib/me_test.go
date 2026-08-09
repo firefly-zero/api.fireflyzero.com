@@ -51,7 +51,6 @@ func TestPostMe(t *testing.T) {
 			"language": "en",
 			"country": "NL",
 			"timezone": "Europe/Amsterdam",
-			"author_ids": [],
 			"created_at": ANY,
 			"updated_at": ANY
 		}

@@ -13,7 +13,6 @@ import (
 type OrderItem struct {
 	Name        string              `json:"name"`
 	ProductSlug dbtypes.ProductSlug `json:"product_slug"`
-	ReleaseID   *dbtypes.ReleaseID  `json:"release_id"`
 	Quantity    int32               `json:"quantity"`
 	RetailPrice *int32              `json:"retail_price"`
 	Fulfilled   bool                `json:"fulfilled"`
@@ -108,7 +107,6 @@ func addOrderItem(r josh.Req) josh.Resp {
 	item, err := queries.CreateOrderItem(r.Context(), db.CreateOrderItemParams{
 		Order:       order.ID,
 		Product:     attrs.ProductSlug,
-		Release:     nil,
 		Quantity:    qty,
 		RetailPrice: price,
 	})
@@ -278,7 +276,6 @@ func adjustRetailPrice(r josh.Req, price int32) josh.Resp {
 		return josh.Ok(formatOrderItem(item, product))
 	}
 	return josh.NotModified()
-
 }
 
 // Get the draft order, creating it if it doesn't exist.
@@ -300,7 +297,6 @@ func formatOrderItem(item db.OrderItem, product db.Product) josh.Data[OrderItem]
 		Attributes: OrderItem{
 			Name:        product.Name,
 			ProductSlug: item.Product,
-			ReleaseID:   item.Release,
 			Quantity:    item.Quantity,
 			RetailPrice: &item.RetailPrice,
 			Fulfilled:   item.Fulfilled,

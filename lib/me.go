@@ -20,13 +20,12 @@ import (
 const defaultTimezone = "Europe/Amsterdam"
 
 type Me struct {
-	Email     string   `json:"email"`
-	AuthorIDs []string `json:"author_ids"`
-	Language  string   `json:"language"`
-	Country   string   `json:"country"`
-	Timezone  string   `json:"timezone"`
-	CreatedAt string   `json:"created_at"`
-	UpdatedAt string   `json:"updated_at"`
+	Email     string `json:"email"`
+	Language  string `json:"language"`
+	Country   string `json:"country"`
+	Timezone  string `json:"timezone"`
+	CreatedAt string `json:"created_at"`
+	UpdatedAt string `json:"updated_at"`
 }
 
 func withMe(h josh.Handler) josh.Handler {
@@ -247,16 +246,11 @@ func formatMe(me db.User) josh.Data[Me] {
 	if err != nil {
 		tz = defaultTimezone
 	}
-	authorIDs := me.AuthorIds
-	if authorIDs == nil {
-		authorIDs = []string{}
-	}
 	return josh.Data[Me]{
 		ID:   strconv.FormatInt(int64(me.ID), 10),
 		Type: "me",
 		Attributes: Me{
 			Email:     me.Email,
-			AuthorIDs: authorIDs,
 			Language:  me.Language,
 			Country:   me.Country,
 			Timezone:  tz,

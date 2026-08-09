@@ -25,18 +25,6 @@ sql:
             go_type:
               import: github.com/firefly-zero/api.fireflyzero.com/lib/dbtypes
               type: UserID
-          - column: addresses.id
-            go_type:
-              import: github.com/firefly-zero/api.fireflyzero.com/lib/dbtypes
-              type: AddressID
-          - column: releases.id
-            go_type:
-              import: github.com/firefly-zero/api.fireflyzero.com/lib/dbtypes
-              type: ReleaseID
-          - column: releases.product
-            go_type:
-              import: github.com/firefly-zero/api.fireflyzero.com/lib/dbtypes
-              type: ProductSlug
           - column: orders.id
             go_type:
               import: github.com/firefly-zero/api.fireflyzero.com/lib/dbtypes
@@ -45,11 +33,6 @@ sql:
             go_type:
               import: github.com/firefly-zero/api.fireflyzero.com/lib/dbtypes
               type: UserID
-          - column: orders.address
-            go_type:
-              import: github.com/firefly-zero/api.fireflyzero.com/lib/dbtypes
-              type: AddressID
-              pointer: true
           - column: order_items.id
             go_type:
               import: github.com/firefly-zero/api.fireflyzero.com/lib/dbtypes
@@ -62,11 +45,6 @@ sql:
             go_type:
               import: github.com/firefly-zero/api.fireflyzero.com/lib/dbtypes
               type: ProductSlug
-          - column: order_items.release
-            go_type:
-              import: github.com/firefly-zero/api.fireflyzero.com/lib/dbtypes
-              type: ReleaseID
-              pointer: true
           - column: owned_products.id
             go_type:
               import: github.com/firefly-zero/api.fireflyzero.com/lib/dbtypes
@@ -79,11 +57,6 @@ sql:
             go_type:
               import: github.com/firefly-zero/api.fireflyzero.com/lib/dbtypes
               type: ProductSlug
-          - column: owned_products.release
-            go_type:
-              import: github.com/firefly-zero/api.fireflyzero.com/lib/dbtypes
-              type: ReleaseID
-              pointer: true
           - column: products.slug
             go_type:
               import: github.com/firefly-zero/api.fireflyzero.com/lib/dbtypes
