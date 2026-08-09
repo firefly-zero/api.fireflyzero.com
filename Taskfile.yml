@@ -59,17 +59,6 @@ tasks:
     cmds:
       - "{{.COMPOSE}} down {{.CLI_ARGS}}"
 
-  catalog:clone:
-    status:
-      - test -f catalog.fireflyzero.com/README.md
-    cmds:
-      - git clone git@github.com:firefly-zero/catalog.fireflyzero.com.git
-  catalog:pull:
-    dir: catalog.fireflyzero.com
-    cmds:
-      - task: catalog:clone
-      - git pull
-
   goose:
     desc: "Run a goose (migrations management tool) subcommand"
     cmds:
