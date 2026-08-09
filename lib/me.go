@@ -12,6 +12,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/orsinium-labs/josh"
+	"github.com/stripe/stripe-go/v84"
 	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/text/language"
@@ -110,6 +111,7 @@ func getMe(r josh.Req) josh.Resp {
 
 func addMe(r josh.Req) josh.Resp {
 	queries := josh.Must(josh.GetSingleton[*db.Queries](r))
+	client := josh.Must(josh.GetSingleton[*stripe.Client](r))
 	jwt := josh.Must(josh.GetSingleton[JWT](r))
 
 	body, err := schemas.ReadBody[Me](r, "me", "_add")
@@ -139,12 +141,25 @@ func addMe(r josh.Req) josh.Resp {
 		return josh.BadRequest(josh.Error{Detail: "unsupported timezone"})
 	}
 
+	// Create Stripe customer.
+	var stripeID string
+	if client != nil {
+		customer, err := client.V1Customers.Create(r.Context(), &stripe.CustomerCreateParams{
+			Email: &jwt.Email,
+		})
+		if err != nil {
+			return ServerErrorR(r, "failed to create Stripe customer", err)
+		}
+		stripeID = customer.ID
+	}
+
 	// Save the user in the DB.
 	params := db.CreateUserParams{
 		Email:    jwt.Email,
 		Language: normalizeLanguage(attrs.Language),
 		Country:  attrs.Country,
 		Timezone: attrs.Timezone,
+		StripeID: stripeID,
 	}
 	me, err := queries.CreateUser(r.Context(), params)
 	if err != nil {

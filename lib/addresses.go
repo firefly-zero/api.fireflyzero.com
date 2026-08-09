@@ -17,11 +17,8 @@ func getAddress(r josh.Req) josh.Resp {
 	if err != nil {
 		return ServerErrorR(r, "failed to get user info", err)
 	}
-	if me.StripeID == nil {
-		return ServerErrorR(r, "no stripe customer", nil)
-	}
-	customer, err := client.V1Customers.Retrieve(r.Context(), *me.StripeID, &stripe.CustomerRetrieveParams{})
-	if me.StripeID == nil {
+	customer, err := client.V1Customers.Retrieve(r.Context(), me.StripeID, &stripe.CustomerRetrieveParams{})
+	if err != nil {
 		return ServerErrorR(r, "failed to update customer", err)
 	}
 	return josh.Ok(josh.Data[stripe.Address]{
@@ -44,13 +41,10 @@ func setAddress(r josh.Req) josh.Resp {
 	if err != nil {
 		return ServerErrorR(r, "failed to get user info", err)
 	}
-	if me.StripeID == nil {
-		return ServerErrorR(r, "no stripe customer", nil)
-	}
-	customer, err := client.V1Customers.Update(r.Context(), *me.StripeID, &stripe.CustomerUpdateParams{
+	customer, err := client.V1Customers.Update(r.Context(), me.StripeID, &stripe.CustomerUpdateParams{
 		Address: &body.Attributes,
 	})
-	if me.StripeID == nil {
+	if err != nil {
 		return ServerErrorR(r, "failed to update customer", err)
 	}
 	return josh.Ok(josh.Data[stripe.Address]{

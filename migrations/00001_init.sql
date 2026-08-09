@@ -14,7 +14,7 @@ CREATE TABLE users (
     -- https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
     "timezone"          varchar(64)     NOT NULL CHECK ("timezone" <> ''),
     -- ID of the customer in Stripe.
-    "stripe_id"         varchar(128)    NULL DEFAULT NULL UNIQUE CHECK ("stripe_id" <> ''),
+    "stripe_id"         varchar(128)    NOT NULL UNIQUE CHECK ("stripe_id" <> ''),
     -- When the user was soft-deleted, if ever.
     "deleted_at"        timestamptz     NULL DEFAULT NULL,
     "created_at"        timestamptz     NOT NULL DEFAULT now(),

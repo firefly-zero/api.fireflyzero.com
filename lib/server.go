@@ -41,7 +41,7 @@ func wrap(s Server, h josh.Handler) http.HandlerFunc {
 
 func wrapNoAuth(s Server, h josh.Handler) http.HandlerFunc {
 	h = withHeaders(h)
-	h = middlewares.With4(s.Config, s.Queries, s.DB, s.Clock, h)
+	h = middlewares.With5(s.Config, s.Queries, s.DB, s.Clock, s.Stripe, h)
 	// Register Sentry before Recover because it re-raises panics.
 	if s.Config.SentryDSN != "" {
 		h = Sentry(h)

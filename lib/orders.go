@@ -2,7 +2,6 @@ package lib
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"time"
 
@@ -70,6 +69,10 @@ func checkoutOrder(r josh.Req) josh.Resp {
 	}
 	attrs := body.Attributes
 
+	me, err := queries.GetUserByID(r.Context(), myID)
+	if err != nil {
+		return ServerErrorR(r, "failed to get user info", err)
+	}
 	order, err := queries.GetDraftOrder(r.Context(), myID)
 	if err != nil {
 		return ServerErrorR(r, "failed to get order", err)
@@ -106,11 +109,6 @@ func checkoutOrder(r josh.Req) josh.Resp {
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(r.Context()), 5*time.Second)
 	defer cancel()
 
-	customerID, err := ensureCustomer(ctx)
-	if err != nil {
-		return ServerErrorR(r, "failed to get Stripe customer", err)
-	}
-
 	orderIDStr := formatID(order.ID)
 	params := stripe.CheckoutSessionCreateParams{
 		Params: stripe.Params{
@@ -119,7 +117,7 @@ func checkoutOrder(r josh.Req) josh.Resp {
 		Mode:       new(string(stripe.CheckoutSessionModePayment)),
 		SuccessURL: new(formatOrderURL(attrs.SuccessURL, order.ID)),
 		CancelURL:  new(formatOrderURL(attrs.CancelURL, order.ID)),
-		Customer:   &customerID,
+		Customer:   &me.StripeID,
 		LineItems:  lineItems,
 		Metadata: map[string]string{
 			"order_id": orderIDStr,
@@ -151,43 +149,6 @@ func checkoutOrder(r josh.Req) josh.Resp {
 			RedirectURL: session.URL,
 		},
 	})
-}
-
-// Create Stripe customer for the user if it doesn't exist.
-//
-// Returns the Stripe customer ID.
-func ensureCustomer(ctx context.Context) (string, error) {
-	queries := josh.Must(josh.CGetSingleton[*db.Queries](ctx))
-	client := josh.Must(josh.CGetSingleton[*stripe.Client](ctx))
-	myID := josh.Must(josh.CGetSingleton[dbtypes.UserID](ctx))
-
-	me, err := queries.GetUserByID(ctx, myID)
-	if err != nil {
-		return "", fmt.Errorf("get user: %w", err)
-	}
-	if me.StripeID != nil {
-		return *me.StripeID, nil
-	}
-
-	customer, err := client.V1Customers.Create(ctx, &stripe.CustomerCreateParams{
-		Params: stripe.Params{
-			IdempotencyKey: new("create-customer-" + formatID(me.ID)),
-		},
-		Email: &me.Email,
-	})
-	if err != nil {
-		return "", fmt.Errorf("create customer: %w", err)
-	}
-
-	_, err = queries.UpdateUser(ctx, db.UpdateUserParams{
-		StripeID: &customer.ID,
-		ID:       myID,
-	})
-	if err != nil {
-		return "", fmt.Errorf("update user: %w", err)
-	}
-
-	return customer.ID, nil
 }
 
 func formatOrderURL(template string, id dbtypes.OrderID) string {

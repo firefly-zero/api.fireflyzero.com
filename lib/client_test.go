@@ -22,6 +22,7 @@ import (
 	"github.com/lmittmann/tint"
 	"github.com/matryer/is"
 	"github.com/orsinium-labs/josh"
+	"github.com/stripe/stripe-go/v84"
 )
 
 type TestUser struct {
@@ -80,6 +81,7 @@ func NewTestClient(t *testing.T) TestClient {
 		Queries: queries,
 		DB:      tx,
 		Clock:   clock.Now,
+		Stripe:  stripe.NewClient(os.Getenv("API_STRIPE_KEY")),
 	}
 	mux := http.NewServeMux()
 	server.RegisterEndpoints(mux)

@@ -1,7 +1,7 @@
 -- name: CreateUser :one
 INSERT INTO "users"
-("email", "country", "language", "timezone")
-VALUES ($1, $2, $3, $4)
+("email", "country", "language", "timezone", "stripe_id")
+VALUES ($1, $2, $3, $4, $5)
 RETURNING *;
 
 -- name: GetUserByEmail :one
@@ -16,9 +16,7 @@ SET
     "country"           = COALESCE(sqlc.narg(country),          "country"),
     "language"          = COALESCE(sqlc.narg(language),         "language"),
     "timezone"          = COALESCE(sqlc.narg(timezone),         "timezone"),
-    "stripe_id"         = COALESCE(sqlc.narg(stripe_id),        "stripe_id"),
-
-    "updated_at"    = NOW()
+    "updated_at"        = NOW()
 WHERE "id" = @id
 RETURNING *;
 
