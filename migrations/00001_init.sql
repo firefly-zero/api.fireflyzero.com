@@ -95,6 +95,13 @@ CREATE TABLE products (
     "slug"              varchar(33)     NOT NULL UNIQUE CHECK ("slug" <> ''),
     "group"             varchar(120)    NOT NULL DEFAULT '',
     "name"              varchar(120)    NOT NULL CHECK ("name" <> ''),
+    -- Common (for us) tax codes:
+    --   * txcd_10201000: Video Games - downloaded - non subscription - with permanent rights
+    --   * txcd_90000001: Cash Donation
+    --   * txcd_34022001: Video Gaming Console - Portable
+    --   * txcd_30011000: Clothing & Footwear
+    -- More: https://docs.stripe.com/tax/tax-codes
+    "tax_code"          varchar(120)    NOT NULL CHECK ("tax_code" <> ''),
     "retail_price"      integer         NOT NULL CHECK ("retail_price" >= 0),
 
     "created_at"        timestamptz     NOT NULL DEFAULT now(),
@@ -104,18 +111,18 @@ CREATE TABLE products (
 INSERT INTO "groups" ("slug", "name") VALUES ('t-shirt', 'T-shirt');
 
 INSERT INTO "products"
-("slug",             "group",   "name",             "retail_price")
+("slug",             "group",   "name",             "tax_code", "retail_price")
 VALUES
-('donation',         '',        '♥️ Donate',        0),
-('device',           '',        '💡 Firefly Zero',  10000),
-('t-shirt-xs-black', 't-shirt', '⚫ Black (XS)',    2500),
-('t-shirt-s-black',  't-shirt', '⚫ Black (S)',     2500),
-('t-shirt-m-black',  't-shirt', '⚫ Black (M)',     2500),
-('t-shirt-l-black',  't-shirt', '⚫ Black (L)',     2500),
-('t-shirt-xs-white', 't-shirt', '⚪️ White (XS)',    2500),
-('t-shirt-s-white',  't-shirt', '⚪️ White (S)',     2500),
-('t-shirt-m-white',  't-shirt', '⚪️ White (M)',     2500),
-('t-shirt-l-white',  't-shirt', '⚪️ White (L)',     2500);
+('donation',         '',        '♥️ Donate',        'txcd_90000001',     0),
+('device',           '',        '💡 Firefly Zero',  'txcd_34022001', 10000),
+('t-shirt-xs-black', 't-shirt', '⚫ Black (XS)',    'txcd_30011000',  2500),
+('t-shirt-s-black',  't-shirt', '⚫ Black (S)',     'txcd_30011000',  2500),
+('t-shirt-m-black',  't-shirt', '⚫ Black (M)',     'txcd_30011000',  2500),
+('t-shirt-l-black',  't-shirt', '⚫ Black (L)',     'txcd_30011000',  2500),
+('t-shirt-xs-white', 't-shirt', '⚪️ White (XS)',    'txcd_30011000',  2500),
+('t-shirt-s-white',  't-shirt', '⚪️ White (S)',     'txcd_30011000',  2500),
+('t-shirt-m-white',  't-shirt', '⚪️ White (M)',     'txcd_30011000',  2500),
+('t-shirt-l-white',  't-shirt', '⚪️ White (L)',     'txcd_30011000',  2500);
 
 -- +goose StatementEnd
 

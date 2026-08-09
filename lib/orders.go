@@ -200,7 +200,7 @@ func makeProductData(p db.Product) stripe.CheckoutSessionCreateLineItemPriceData
 			"product_slug": string(p.Slug),
 		},
 		Name:    &p.Name,
-		TaxCode: ptr(getTaxCode(p.Slug)),
+		TaxCode: &p.TaxCode,
 	}
 }
 
@@ -211,26 +211,6 @@ func formatOrder(order db.Order) josh.Data[Order] {
 		Attributes: Order{
 			Paid: order.Paid,
 		},
-	}
-}
-
-// https://docs.stripe.com/tax/tax-codes
-func getTaxCode(slug dbtypes.ProductSlug) string {
-	isApp := strings.Contains(string(slug), ".")
-	if isApp {
-		// Video Games - downloaded - non subscription - with permanent rights
-		return "txcd_10201000"
-	}
-	switch slug {
-	case "donation":
-		// Cash Donation
-		return "txcd_90000001"
-	case "console", "device", "firefly", "firefly-zero":
-		// Video Gaming Console - Portable
-		return "txcd_34022001"
-	default:
-		// Clothing & Footwear
-		return "txcd_30011000"
 	}
 }
 
