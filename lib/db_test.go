@@ -29,13 +29,13 @@ func (db *BlockingDB) Map(f func(db.DBTX)) {
 	f(db.tx)
 }
 
-func (db *BlockingDB) Exec(ctx context.Context, q string, args ...interface{}) (pgconn.CommandTag, error) {
+func (db *BlockingDB) Exec(ctx context.Context, q string, args ...any) (pgconn.CommandTag, error) {
 	db.mx.Lock()
 	defer db.mx.Unlock()
 	return db.tx.Exec(ctx, q, args...)
 }
 
-func (db *BlockingDB) Query(ctx context.Context, q string, args ...interface{}) (pgx.Rows, error) {
+func (db *BlockingDB) Query(ctx context.Context, q string, args ...any) (pgx.Rows, error) {
 	db.mx.Lock()
 	rows, err := db.tx.Query(ctx, q, args...)
 	if err != nil {
@@ -45,7 +45,7 @@ func (db *BlockingDB) Query(ctx context.Context, q string, args ...interface{}) 
 	return &Rows{Rows: rows, mx: &db.mx}, nil
 }
 
-func (db *BlockingDB) QueryRow(ctx context.Context, q string, args ...interface{}) pgx.Row {
+func (db *BlockingDB) QueryRow(ctx context.Context, q string, args ...any) pgx.Row {
 	db.mx.Lock()
 	row := db.tx.QueryRow(ctx, q, args...)
 	return &Row{Row: row, mx: &db.mx}
@@ -80,7 +80,7 @@ type Row struct {
 	mx   *sync.Mutex
 }
 
-func (r *Row) Scan(dest ...interface{}) error {
+func (r *Row) Scan(dest ...any) error {
 	defer r.release()
 	return r.Row.Scan(dest...)
 }

@@ -30,18 +30,15 @@ func newJSONHandler(config Config) slog.Handler {
 	}
 	var handler slog.Handler
 	if config.Debug {
-		handler = tint.NewHandler(os.Stdout, &tint.Options{
-			ReplaceAttr: func(_ []string, a slog.Attr) slog.Attr {
-				// Color all errors red.
-				err, isError := a.Value.Any().(error)
-				if isError {
-					aErr := tint.Err(err)
-					aErr.Key = a.Key
-					return aErr
-				}
-				return a
-			},
-		})
+		handler = tint.NewTextHandler(os.Stdout, &tint.Options{ReplaceAttr: func(_ []string, a slog.Attr) slog.Attr {
+			err, isError := a.Value.Any().(error)
+			if isError {
+				aErr := tint.Err(err)
+				aErr.Key = a.Key
+				return aErr
+			}
+			return a
+		}})
 	} else {
 		handler = slog.NewJSONHandler(os.Stdout, opts)
 	}
@@ -50,7 +47,7 @@ func newJSONHandler(config Config) slog.Handler {
 
 func newSentryHandler() slog.Handler {
 	opt := sentryslog.Option{
-		Level:     slog.LevelWarn,
+		LogLevel:  []slog.Level{slog.LevelWarn},
 		AddSource: true,
 		AttrFromContext: []func(ctx context.Context) []slog.Attr{
 			extractSentryAttrs,

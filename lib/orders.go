@@ -91,12 +91,12 @@ func checkoutOrder(r josh.Req) josh.Resp {
 			return ServerErrorR(r, "failed to get product info", err)
 		}
 		lineItem := stripe.CheckoutSessionCreateLineItemParams{
-			Quantity: ptr(int64(item.Quantity)),
+			Quantity: new(int64(item.Quantity)),
 			PriceData: &stripe.CheckoutSessionCreateLineItemPriceDataParams{
-				Currency:    ptr(string(stripe.CurrencyEUR)),
-				ProductData: ptr(makeProductData(product)),
+				Currency:    new(string(stripe.CurrencyEUR)),
+				ProductData: new(makeProductData(product)),
 				TaxBehavior: new(string),
-				UnitAmount:  ptr(int64(item.RetailPrice)),
+				UnitAmount:  new(int64(item.RetailPrice)),
 			},
 		}
 		lineItems = append(lineItems, &lineItem)
@@ -114,21 +114,21 @@ func checkoutOrder(r josh.Req) josh.Resp {
 	orderIDStr := formatID(order.ID)
 	params := stripe.CheckoutSessionCreateParams{
 		Params: stripe.Params{
-			IdempotencyKey: ptr("order-checkout-" + orderIDStr),
+			IdempotencyKey: new("order-checkout-" + orderIDStr),
 		},
-		Mode:       ptr(string(stripe.CheckoutSessionModePayment)),
-		SuccessURL: ptr(formatOrderURL(attrs.SuccessURL, order.ID)),
-		CancelURL:  ptr(formatOrderURL(attrs.CancelURL, order.ID)),
+		Mode:       new(string(stripe.CheckoutSessionModePayment)),
+		SuccessURL: new(formatOrderURL(attrs.SuccessURL, order.ID)),
+		CancelURL:  new(formatOrderURL(attrs.CancelURL, order.ID)),
 		Customer:   &customerID,
 		LineItems:  lineItems,
 		Metadata: map[string]string{
 			"order_id": orderIDStr,
 		},
-		AllowPromotionCodes: ptr(false),
+		AllowPromotionCodes: new(false),
 		AutomaticTax: &stripe.CheckoutSessionCreateAutomaticTaxParams{
-			Enabled: ptr(true),
+			Enabled: new(true),
 		},
-		Currency: ptr(string(stripe.CurrencyEUR)),
+		Currency: new(string(stripe.CurrencyEUR)),
 	}
 	session, err := client.V1CheckoutSessions.Create(ctx, &params)
 	if err != nil {
@@ -171,7 +171,7 @@ func ensureCustomer(ctx context.Context) (string, error) {
 
 	customer, err := client.V1Customers.Create(ctx, &stripe.CustomerCreateParams{
 		Params: stripe.Params{
-			IdempotencyKey: ptr("create-customer-" + formatID(me.ID)),
+			IdempotencyKey: new("create-customer-" + formatID(me.ID)),
 		},
 		Email: &me.Email,
 	})
@@ -212,8 +212,4 @@ func formatOrder(order db.Order) josh.Data[Order] {
 			Paid: order.Paid,
 		},
 	}
-}
-
-func ptr[T any](v T) *T {
-	return &v
 }

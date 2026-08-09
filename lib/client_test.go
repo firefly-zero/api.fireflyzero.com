@@ -105,19 +105,15 @@ func NewTestClient(t *testing.T) TestClient {
 // Setup a colorful log handler.
 func newTestLogHandler(t *testing.T) slog.Handler {
 	t.Helper()
-	handler := tint.NewHandler(os.Stdout, &tint.Options{
-		Level: slog.LevelDebug,
-		ReplaceAttr: func(_ []string, a slog.Attr) slog.Attr {
-			// Color all errors red.
-			err, isError := a.Value.Any().(error)
-			if isError {
-				aErr := tint.Err(err)
-				aErr.Key = a.Key
-				return aErr
-			}
-			return a
-		},
-	})
+	handler := tint.NewTextHandler(os.Stdout, &tint.Options{Level: slog.LevelDebug, ReplaceAttr: func(_ []string, a slog.Attr) slog.Attr {
+		err, isError := a.Value.Any().(error)
+		if isError {
+			aErr := tint.Err(err)
+			aErr.Key = a.Key
+			return aErr
+		}
+		return a
+	}})
 	return LogTestHandler{handler, t}
 }
 
