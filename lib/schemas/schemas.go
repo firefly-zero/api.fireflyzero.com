@@ -2,7 +2,7 @@ package schemas
 
 import (
 	"github.com/orsinium-labs/jsony"
-	. "github.com/orsinium-labs/valdo/valdo" //nolint:revive,stylecheck
+	. "github.com/orsinium-labs/valdo/valdo" //nolint:revive,staticcheck
 )
 
 const (

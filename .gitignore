@@ -1,3 +1,4 @@
 /catalog.fireflyzero.com
 /lib/db/
 /.env
+/bin/golangci-lint

@@ -26,13 +26,14 @@ tasks:
       - go install mvdan.cc/gofumpt@latest
   install:golangci-lint:
     status:
-      - which golangci-lint
+      - test -f ./bin/golangci-lint
+      - ./bin/golangci-lint --version | grep -F '2.12.2'
     cmds:
       # https://golangci-lint.run/welcome/install/#binaries
       - >
         curl -sSfL
         https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh
-        | sh -s -- -b $(go env GOPATH)/bin v1.64.4
+        | sh -s -- -b ./bin v2.12.2
   install:sqlc:
     status:
       - which sqlc
@@ -126,7 +127,7 @@ tasks:
     cmds:
       - task: install:golangci-lint
       - task: sqlc:generate
-      - golangci-lint run --timeout 120s
+      - ./bin/golangci-lint run --timeout 120s
   lint:sqlc:
     cmds:
       - task: install:sqlc
