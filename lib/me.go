@@ -13,7 +13,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/orsinium-labs/josh"
 	"github.com/stripe/stripe-go/v84"
-	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/text/language"
 )
@@ -140,12 +140,14 @@ func addMe(r josh.Req) josh.Resp {
 	if err != nil {
 		return josh.BadRequest(josh.Error{Detail: "unsupported timezone"})
 	}
+	// TODO: set language from HTTP headers.
 
 	// Create Stripe customer.
 	var stripeID string
 	if client != nil {
 		customer, err := client.V1Customers.Create(r.Context(), &stripe.CustomerCreateParams{
-			Email: &jwt.Email,
+			Email:            &jwt.Email,
+			PreferredLocales: []*string{&attrs.Language},
 		})
 		if err != nil {
 			return ServerErrorR(r, "failed to create Stripe customer", err)

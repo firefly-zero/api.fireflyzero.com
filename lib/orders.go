@@ -98,7 +98,7 @@ func checkoutOrder(r josh.Req) josh.Resp {
 			PriceData: &stripe.CheckoutSessionCreateLineItemPriceDataParams{
 				Currency:    new(string(stripe.CurrencyEUR)),
 				ProductData: new(makeProductData(product)),
-				TaxBehavior: new(string),
+				TaxBehavior: new("inclusive"),
 				UnitAmount:  new(int64(item.RetailPrice)),
 			},
 		}

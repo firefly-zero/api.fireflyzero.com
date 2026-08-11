@@ -5,7 +5,7 @@ import (
 
 	"github.com/orsinium-labs/josh"
 	"github.com/orsinium-labs/josh/statuses"
-	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.opentelemetry.io/otel/trace"
 )
 

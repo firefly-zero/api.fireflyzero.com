@@ -17,7 +17,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/sdk/trace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.43.0"
 )
 
 const otelEndpoint = "api.honeycomb.io:443"
@@ -74,7 +74,7 @@ func makeOtelResource(config Config) (*resource.Resource, error) {
 		semconv.ServiceName("firefly-api"),
 		semconv.ServiceVersion(config.BuildTime[:16]),
 		semconv.ServiceInstanceID(config.Color),
-		semconv.DeploymentEnvironmentName(config.Env),
+		semconv.DeploymentEnvironmentNameKey.String(config.Env),
 	)
 	return resource.Merge(resource.Default(), r)
 }
