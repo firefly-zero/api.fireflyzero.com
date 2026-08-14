@@ -77,6 +77,9 @@ func (s Server) getRouter() josh.Router {
 			// Soft-delete user.
 			DELETE: wrap(s, deleteMe),
 		},
+		"/products": {
+			POST: wrapNoAuth(s, listProducts),
+		},
 		"/order/checkout": {
 			POST: wrap(s, ValResp("checkout_resp", checkoutOrder)),
 		},
