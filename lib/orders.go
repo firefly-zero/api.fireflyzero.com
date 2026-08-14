@@ -122,6 +122,9 @@ func checkoutOrder(r josh.Req) josh.Resp {
 		Metadata: map[string]string{
 			"order_id": orderIDStr,
 		},
+		ShippingAddressCollection: &stripe.CheckoutSessionCreateShippingAddressCollectionParams{
+			AllowedCountries: []*string{new("NL")},
+		},
 		AllowPromotionCodes: new(false),
 		AutomaticTax: &stripe.CheckoutSessionCreateAutomaticTaxParams{
 			Enabled: new(true),
