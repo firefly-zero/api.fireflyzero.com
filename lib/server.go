@@ -80,16 +80,8 @@ func (s Server) getRouter() josh.Router {
 		"/products": {
 			POST: wrapNoAuth(s, listProducts),
 		},
-		"/order/checkout": {
+		"/checkout": {
 			POST: wrap(s, ValResp("checkout_resp", checkoutOrder)),
-		},
-		"/order/items": {
-			GET:  wrap(s, ValResp("order_items", listDraftOrderItems)),
-			POST: wrap(s, ValResp("order_item", addOrderItem)),
-		},
-		"/order/{order}/items": {
-			GET:   wrap(s, ValResp("order_items", withOrder(listOrderItems))),
-			PATCH: wrap(s, ValResp("order_item", withOrder(withOrderItem(patchOrderItem)))),
 		},
 		// Health checks.
 		"/healthz/live":  {GET: Live},

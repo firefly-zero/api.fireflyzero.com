@@ -8,7 +8,6 @@ import (
 	"github.com/firefly-zero/api.fireflyzero.com/lib/db"
 	"github.com/firefly-zero/api.fireflyzero.com/lib/dbtypes"
 	"github.com/firefly-zero/api.fireflyzero.com/lib/schemas"
-	"github.com/jackc/pgx/v5"
 	"github.com/orsinium-labs/josh"
 	"github.com/stripe/stripe-go/v84"
 )
@@ -18,44 +17,18 @@ type Order struct {
 }
 
 type CheckoutReq struct {
-	SuccessURL string `json:"success_url"`
-	CancelURL  string `json:"cancel_url"`
+	SuccessURL string            `json:"success_url"`
+	CancelURL  string            `json:"cancel_url"`
+	Items      []josh.Data[Item] `json:"items"`
+}
+
+type Item struct {
+	Quantity uint8  `json:"quantity"`
+	Price    uint32 `json:"price"`
 }
 
 type CheckoutResp struct {
 	RedirectURL string `json:"redirect_url"`
-}
-
-type ConfirmReq struct {
-	SessionID string `json:"session_id"`
-}
-
-func withOrder(h josh.Handler) josh.Handler {
-	return func(r josh.Req) josh.Resp {
-		queries := josh.Must(josh.GetSingleton[*db.Queries](r))
-		myID := josh.Must(josh.GetSingleton[dbtypes.UserID](r))
-
-		orderID, errResp := josh.GetID[dbtypes.OrderID](r, "order")
-		if errResp != nil {
-			return josh.BadRequest(*errResp)
-		}
-		params := db.GetOrderParams{
-			User: myID,
-			ID:   orderID,
-		}
-		order, err := queries.GetOrder(r.Context(), params)
-		if err == pgx.ErrNoRows {
-			return josh.NotFound(josh.Error{
-				Detail: "order not found",
-				Code:   "order-404",
-			})
-		}
-		if err != nil {
-			return ServerErrorR(r, "failed to get order", err)
-		}
-		r = josh.Must(josh.WithSingleton(r, order))
-		return h(r)
-	}
 }
 
 func checkoutOrder(r josh.Req) josh.Resp {
@@ -73,7 +46,7 @@ func checkoutOrder(r josh.Req) josh.Resp {
 	if err != nil {
 		return ServerErrorR(r, "failed to get user info", err)
 	}
-	order, err := queries.GetDraftOrder(r.Context(), myID)
+	order, err := queries.EnsureOrder(r.Context(), myID)
 	if err != nil {
 		return ServerErrorR(r, "failed to get order", err)
 	}
@@ -82,28 +55,20 @@ func checkoutOrder(r josh.Req) josh.Resp {
 			Detail: "you can checkout only draft order",
 		})
 	}
-	items, err := queries.ListOrderItems(r.Context(), order.ID)
-	if err != nil {
-		return ServerErrorR(r, "failed to list order items", err)
-	}
 
-	lineItems := make([]*stripe.CheckoutSessionCreateLineItemParams, 0, len(items))
-	for _, item := range items {
-		product, err := queries.GetProduct(r.Context(), item.Product)
-		if err != nil {
-			return ServerErrorR(r, "failed to get product info", err)
+	lineItems := make([]*stripe.CheckoutSessionCreateLineItemParams, len(attrs.Items))
+	for i, item := range attrs.Items {
+		priceData := stripe.CheckoutSessionCreateLineItemPriceDataParams{
+			Currency:    new(string(stripe.CurrencyEUR)),
+			Product:     &item.ID,
+			TaxBehavior: new("inclusive"),
+			UnitAmount:  new(int64(item.Attributes.Price)),
 		}
 		lineItem := stripe.CheckoutSessionCreateLineItemParams{
-			Quantity: new(int64(item.Quantity)),
-			PriceData: &stripe.CheckoutSessionCreateLineItemPriceDataParams{
-				Currency:    new(string(stripe.CurrencyEUR)),
-				Product:     new(""),
-				ProductData: new(makeProductData(product)),
-				TaxBehavior: new("inclusive"),
-				UnitAmount:  new(int64(item.RetailPrice)),
-			},
+			Quantity:  new(int64(item.Attributes.Quantity)),
+			PriceData: &priceData,
 		}
-		lineItems = append(lineItems, &lineItem)
+		lineItems[i] = &lineItem
 	}
 
 	// From this point on, the request cannot be canceled.
@@ -157,24 +122,4 @@ func checkoutOrder(r josh.Req) josh.Resp {
 
 func formatOrderURL(template string, id dbtypes.OrderID) string {
 	return strings.ReplaceAll(template, "{order}", formatID(id))
-}
-
-func makeProductData(p db.Product) stripe.CheckoutSessionCreateLineItemPriceDataProductDataParams {
-	return stripe.CheckoutSessionCreateLineItemPriceDataProductDataParams{
-		Metadata: map[string]string{
-			"product_slug": string(p.Slug),
-		},
-		Name:    &p.Name,
-		TaxCode: &p.TaxCode,
-	}
-}
-
-func formatOrder(order db.Order) josh.Data[Order] {
-	return josh.Data[Order]{
-		ID:   formatID(order.ID),
-		Type: "order",
-		Attributes: Order{
-			Paid: order.Paid,
-		},
-	}
 }

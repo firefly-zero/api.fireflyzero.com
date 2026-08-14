@@ -6,14 +6,14 @@ import (
 )
 
 type Product struct {
-	Name        string
-	Description string
-	Variants    []josh.Data[Variant]
+	Name        string               `json:"name"`
+	Description string               `json:"description"`
+	Variants    []josh.Data[Variant] `json:"variants"`
 }
 
 type Variant struct {
-	Name  string
-	Price int32
+	Name  string `json:"name"`
+	Price int32  `json:"price"`
 }
 
 func listProducts(r josh.Req) josh.Resp {
