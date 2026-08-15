@@ -78,7 +78,7 @@ func (s Server) getRouter() josh.Router {
 			DELETE: wrap(s, deleteMe),
 		},
 		"/products": {
-			POST: wrapNoAuth(s, listProducts),
+			GET: wrapNoAuth(s, listProducts),
 		},
 		"/checkout": {
 			POST: wrap(s, ValResp("checkout_resp", checkoutOrder)),

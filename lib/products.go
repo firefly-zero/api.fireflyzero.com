@@ -8,6 +8,7 @@ import (
 type Product struct {
 	Name        string               `json:"name"`
 	Description string               `json:"description"`
+	Image       *string              `json:"image"`
 	Variants    []josh.Data[Variant] `json:"variants"`
 }
 
@@ -58,12 +59,17 @@ func formatProduct(p *stripe.Product, prices []*stripe.Price) josh.Data[Product]
 			},
 		}
 	}
+	var image *string
+	if len(p.Images) != 0 {
+		image = &p.Images[0]
+	}
 	return josh.Data[Product]{
 		ID:   p.ID,
 		Type: "product",
 		Attributes: Product{
 			Name:        p.Name,
 			Description: p.Description,
+			Image:       image,
 			Variants:    variants,
 		},
 	}
