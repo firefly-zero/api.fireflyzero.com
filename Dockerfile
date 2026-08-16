@@ -1,7 +1,6 @@
 FROM golang:1.25.4-alpine3.21 AS build
 WORKDIR /app
 COPY . .
-COPY --from=sqlc /app/lib/db /app/lib/db
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
     CGO_ENABLED=0 go build -o api-bin ./bin/serve

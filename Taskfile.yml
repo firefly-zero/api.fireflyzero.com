@@ -34,11 +34,6 @@ tasks:
         curl -sSfL
         https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh
         | sh -s -- -b ./bin v2.12.2
-  install:sqlc:
-    status:
-      - which sqlc
-    cmds:
-      - go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
 
   docker:build:
     desc: build dev docker image
@@ -59,44 +54,9 @@ tasks:
     cmds:
       - "{{.COMPOSE}} down {{.CLI_ARGS}}"
 
-  goose:
-    desc: "Run a goose (migrations management tool) subcommand"
-    cmds:
-      - go run ./migrations {{.CLI_ARGS}}
-  goose:create:
-    desc: create a new empty migration with the given name
-    cmds:
-      - test "{{.CLI_ARGS}}"
-      - go run ./migrations create {{.CLI_ARGS}} sql
-  goose:up:
-    desc: apply all pending migrations
-    cmds:
-      - go run ./migrations up
-  goose:down:
-    desc: unapply the latest migrations
-    cmds:
-      - go run ./migrations down
-  goose:wipe:
-    desc: clear the database by unapplying all migrations
-    cmds:
-      - go run ./migrations down-to 0
-
-  sqlc:
-    desc: run an sqlc (SQL queries generator) subcommand
-    cmds:
-      - task: install:sqlc
-      - sqlc {{.CLI_ARGS}}
-  sqlc:generate:
-    desc: generate Go binding for SQL queries
-    cmds:
-      - task: install:sqlc
-      - sqlc generate
-
   serve:
     desc: run the dev server
     cmds:
-      - task: goose:up
-      - task: sqlc:generate
       - go run ./bin/serve
   token:
     desc: generate a new auth token
@@ -115,14 +75,7 @@ tasks:
   lint:golangci-lint:
     cmds:
       - task: install:golangci-lint
-      - task: sqlc:generate
       - ./bin/golangci-lint run --timeout 120s
-  lint:sqlc:
-    cmds:
-      - task: install:sqlc
-      - task: goose:up
-      - sqlc compile
-      - sqlc vet
   lint:govulncheck:
     cmds:
       - task: install:govulncheck
@@ -130,15 +83,11 @@ tasks:
   lint:
     desc: run all linters
     cmds:
-      - task: sqlc:generate
       - task: lint:golangci-lint
-      - task: lint:sqlc
       # - task: lint:govulncheck
   test:
     desc: run all tests
     cmds:
-      - task: goose:up
-      - task: sqlc:generate
       - go test {{ .CLI_ARGS | default "-count=1 -cover -timeout 10s ./..." }}
   all:
     desc: run all code formatters, linters, and tests
