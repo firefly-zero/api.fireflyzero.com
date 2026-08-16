@@ -8,13 +8,10 @@ import (
 	"github.com/firefly-zero/api.fireflyzero.com/lib/db"
 	"github.com/firefly-zero/api.fireflyzero.com/lib/dbtypes"
 	"github.com/firefly-zero/api.fireflyzero.com/lib/schemas"
-	"github.com/getsentry/sentry-go"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/orsinium-labs/josh"
 	"github.com/stripe/stripe-go/v84"
-	semconv "go.opentelemetry.io/otel/semconv/v1.43.0"
-	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/text/language"
 )
 
@@ -68,25 +65,6 @@ func withMe(h josh.Handler) josh.Handler {
 		}
 
 		r = josh.Must(josh.WithSingleton(r, myID))
-		strID := strconv.FormatInt(int64(myID), 10)
-
-		// https://docs.sentry.io/platforms/go/enriching-events/identify-user/
-		hub := sentry.GetHubFromContext(r.Context()) //nolint:contextcheck
-		if hub != nil {
-			scope := hub.Scope()
-			if scope != nil {
-				scope.SetUser(sentry.User{
-					ID:    strID,
-					Email: jwt.Email,
-				})
-			}
-		}
-
-		span := trace.SpanFromContext(r.Context()) //nolint:contextcheck
-		span.SetAttributes(
-			semconv.UserEmail(jwt.Email),
-			semconv.UserID(strID),
-		)
 
 		return h(r)
 	}

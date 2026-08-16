@@ -34,6 +34,7 @@ type Server struct {
 }
 
 func wrap(s Server, h josh.Handler) http.HandlerFunc {
+	h = withUserInfo(h)
 	h = middlewares.Auth(authValidator(s.Config.AuthSecret), h)
 	return wrapNoAuth(s, h)
 }

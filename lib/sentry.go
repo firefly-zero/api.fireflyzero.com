@@ -6,7 +6,35 @@ import (
 
 	"github.com/getsentry/sentry-go"
 	"github.com/orsinium-labs/josh"
+	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+	"go.opentelemetry.io/otel/trace"
 )
+
+func withUserInfo(h josh.Handler) josh.Handler {
+	return func(r josh.Req) josh.Resp {
+		jwt := josh.Must(josh.GetSingleton[JWT](r))
+
+		// https://docs.sentry.io/platforms/go/enriching-events/identify-user/
+		hub := sentry.GetHubFromContext(r.Context()) //nolint:contextcheck
+		if hub != nil {
+			scope := hub.Scope()
+			if scope != nil {
+				scope.SetUser(sentry.User{
+					ID:    jwt.SupabaseID.String(),
+					Email: jwt.Email,
+				})
+			}
+		}
+
+		span := trace.SpanFromContext(r.Context())
+		span.SetAttributes(
+			semconv.UserEmail(jwt.Email),
+			semconv.UserID(jwt.SupabaseID.String()),
+		)
+
+		return h(r)
+	}
+}
 
 // Sentry go/http middleware adapted for use with josh.
 //
