@@ -20,8 +20,7 @@ type CheckoutReq struct {
 }
 
 type Item struct {
-	Quantity uint8  `json:"quantity"`
-	Price    uint32 `json:"price"`
+	Quantity uint8 `json:"quantity"`
 }
 
 type CheckoutResp struct {
@@ -40,15 +39,12 @@ func checkoutOrder(r josh.Req) josh.Resp {
 
 	lineItems := make([]*stripe.CheckoutSessionCreateLineItemParams, len(attrs.Items))
 	for i, item := range attrs.Items {
-		priceData := stripe.CheckoutSessionCreateLineItemPriceDataParams{
-			Currency:    new(string(stripe.CurrencyEUR)),
-			Product:     &item.ID,
-			TaxBehavior: new("inclusive"),
-			UnitAmount:  new(int64(item.Attributes.Price)),
-		}
 		lineItem := stripe.CheckoutSessionCreateLineItemParams{
-			Quantity:  new(int64(item.Attributes.Quantity)),
-			PriceData: &priceData,
+			Price:    &item.ID,
+			Quantity: new(int64(item.Attributes.Quantity)),
+			AdjustableQuantity: &stripe.CheckoutSessionCreateLineItemAdjustableQuantityParams{
+				Enabled: new(true),
+			},
 		}
 		lineItems[i] = &lineItem
 	}
@@ -58,17 +54,11 @@ func checkoutOrder(r josh.Req) josh.Resp {
 	defer cancel()
 
 	params := stripe.CheckoutSessionCreateParams{
-		// Params: stripe.Params{
-		// 	IdempotencyKey: new("order-checkout-" + orderIDStr),
-		// },
 		Mode:       new(string(stripe.CheckoutSessionModePayment)),
 		SuccessURL: &attrs.SuccessURL,
 		CancelURL:  &attrs.CancelURL,
 		Customer:   new(string(customerID)),
 		LineItems:  lineItems,
-		// Metadata: map[string]string{
-		// 	"order_id": orderIDStr,
-		// },
 		ShippingAddressCollection: &stripe.CheckoutSessionCreateShippingAddressCollectionParams{
 			AllowedCountries: []*string{new("NL")},
 		},

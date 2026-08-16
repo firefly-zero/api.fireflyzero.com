@@ -3,8 +3,6 @@ package lib
 import "github.com/orsinium-labs/configenv"
 
 type Config struct {
-	PostgresURL string
-
 	// Supabase JWT token.
 	AuthSecret string
 
@@ -35,23 +33,18 @@ type Config struct {
 
 	// Secret key for accessing Stripe (payment system).
 	StripeKey string
-
-	// Token used to verify requests from Stripe to the webhook.
-	StripeSecret string
 }
 
 // Populate config from the passed env var pairs.
 func (c *Config) ParseEnv(pairs []string) error {
 	vars := configenv.Vars{
 		"DEBUG":         configenv.Required(configenv.Bool(&c.Debug)),
-		"POSTGRES_URL":  configenv.Required(configenv.String(&c.PostgresURL)),
 		"AUTH_SECRET":   configenv.Required(configenv.String(&c.AuthSecret)),
 		"BUILD_TIME":    configenv.Required(configenv.String(&c.BuildTime)),
 		"COLOR":         configenv.Required(configenv.String(&c.Color)),
 		"SENTRY_DSN":    configenv.String(&c.SentryDSN),
 		"HONEYCOMB_KEY": configenv.String(&c.HoneycombKey),
 		"STRIPE_KEY":    configenv.String(&c.StripeKey),
-		"STRIPE_SECRET": configenv.String(&c.StripeSecret),
 		"ENV":           configenv.String(&c.Env),
 		"PORT":          configenv.Required(configenv.Int(&c.Port)),
 	}
