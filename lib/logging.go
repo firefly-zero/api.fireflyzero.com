@@ -4,9 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"os"
-	"strconv"
 
-	"github.com/firefly-zero/api.fireflyzero.com/lib/dbtypes"
 	sentryslog "github.com/getsentry/sentry-go/slog"
 	"github.com/lmittmann/tint"
 	"github.com/orsinium-labs/josh"
@@ -61,12 +59,10 @@ func newSentryHandler() slog.Handler {
 func extractSentryAttrs(ctx context.Context) []slog.Attr {
 	attrs := make([]slog.Attr, 0)
 	jwt, jwtErr := josh.CGetSingleton[JWT](ctx)
-	myID, myIDErr := josh.CGetSingleton[dbtypes.UserID](ctx)
-	if jwtErr == nil && myIDErr == nil {
-		strID := strconv.FormatInt(int64(myID), 10)
+	if jwtErr == nil {
 		attrs = append(attrs, slog.Group("user",
 			slog.String("email", jwt.Email),
-			slog.String("id", strID),
+			slog.String("id", jwt.SupabaseID.String()),
 		))
 	}
 	return attrs

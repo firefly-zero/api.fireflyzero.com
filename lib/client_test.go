@@ -16,9 +16,7 @@ import (
 	"time"
 
 	"github.com/firefly-zero/api.fireflyzero.com/lib"
-	"github.com/firefly-zero/api.fireflyzero.com/lib/db"
 	"github.com/google/go-cmp/cmp"
-	"github.com/jackc/pgx/v5"
 	"github.com/lmittmann/tint"
 	"github.com/matryer/is"
 	"github.com/orsinium-labs/josh"
@@ -51,7 +49,6 @@ type TestClient struct {
 	server   *httptest.Server
 	is       *is.I
 	t        *testing.T
-	queries  *db.Queries
 	Validate bool
 	clock    *TestClock
 }
@@ -59,17 +56,8 @@ type TestClient struct {
 func NewTestClient(t *testing.T) TestClient {
 	t.Helper()
 	is := is.New(t)
-	conn0, err := pgx.Connect(t.Context(), os.Getenv("API_POSTGRES_URL"))
-	is.NoErr(err)
-	tx, err := conn0.BeginTx(t.Context(), pgx.TxOptions{})
-	conn := NewBlockingDB(tx)
-	is.NoErr(err)
-
 	logger := slog.New(newTestLogHandler(t))
-
 	clock := &TestClock{}
-	queries := db.New(conn)
-	is.NoErr(err)
 	server := lib.Server{
 		Logger: logger,
 		Config: lib.Config{
@@ -78,10 +66,8 @@ func NewTestClient(t *testing.T) TestClient {
 			Debug:      true,
 			Color:      "blue",
 		},
-		Queries: queries,
-		DB:      tx,
-		Clock:   clock.Now,
-		Stripe:  stripe.NewClient(os.Getenv("API_STRIPE_KEY")),
+		Clock:  clock.Now,
+		Stripe: stripe.NewClient(os.Getenv("API_STRIPE_KEY")),
 	}
 	mux := http.NewServeMux()
 	server.RegisterEndpoints(mux)
@@ -89,18 +75,10 @@ func NewTestClient(t *testing.T) TestClient {
 		server:   httptest.NewServer(mux),
 		is:       is,
 		t:        t,
-		queries:  server.Queries,
 		Validate: true,
 		clock:    clock,
 	}
-	t.Cleanup(func() {
-		conn.Map(func(db.DBTX) {
-			ctx := context.Background() //nolint:usetesting
-			is.NoErr(tx.Rollback(ctx))
-			is.NoErr(conn0.Close(ctx))
-		})
-		client.server.Close()
-	})
+	t.Cleanup(client.server.Close)
 	return client
 }
 

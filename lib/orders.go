@@ -4,8 +4,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/firefly-zero/api.fireflyzero.com/lib/db"
-	"github.com/firefly-zero/api.fireflyzero.com/lib/dbtypes"
 	"github.com/firefly-zero/api.fireflyzero.com/lib/schemas"
 	"github.com/orsinium-labs/josh"
 	"github.com/stripe/stripe-go/v84"
@@ -31,20 +29,14 @@ type CheckoutResp struct {
 }
 
 func checkoutOrder(r josh.Req) josh.Resp {
-	queries := josh.Must(josh.GetSingleton[*db.Queries](r))
 	client := josh.Must(josh.GetSingleton[*stripe.Client](r))
-	myID := josh.Must(josh.GetSingleton[dbtypes.UserID](r))
+	customerID := josh.Must(josh.GetSingleton[CustomerID](r))
 
 	body, err := schemas.ReadBody[CheckoutReq](r, "checkout", "_req")
 	if err != nil {
 		return josh.BadRequest(josh.Error{Detail: err.Error()})
 	}
 	attrs := body.Attributes
-
-	me, err := queries.GetUserByID(r.Context(), myID)
-	if err != nil {
-		return ServerErrorR(r, "failed to get user info", err)
-	}
 
 	lineItems := make([]*stripe.CheckoutSessionCreateLineItemParams, len(attrs.Items))
 	for i, item := range attrs.Items {
@@ -72,7 +64,7 @@ func checkoutOrder(r josh.Req) josh.Resp {
 		Mode:       new(string(stripe.CheckoutSessionModePayment)),
 		SuccessURL: &attrs.SuccessURL,
 		CancelURL:  &attrs.CancelURL,
-		Customer:   &me.StripeID,
+		Customer:   new(string(customerID)),
 		LineItems:  lineItems,
 		// Metadata: map[string]string{
 		// 	"order_id": orderIDStr,

@@ -1,8 +1,3 @@
-FROM sqlc/sqlc:latest AS sqlc
-WORKDIR /app
-COPY . .
-RUN ["/workspace/sqlc", "generate", "--no-remote"]
-
 FROM golang:1.25.4-alpine3.21 AS build
 WORKDIR /app
 COPY . .

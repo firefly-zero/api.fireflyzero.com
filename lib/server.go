@@ -9,8 +9,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/firefly-zero/api.fireflyzero.com/lib/db"
-	"github.com/jackc/pgx/v5"
 	"github.com/orsinium-labs/josh"
 	"github.com/orsinium-labs/josh/middlewares"
 	"github.com/stripe/stripe-go/v84"
@@ -18,18 +16,11 @@ import (
 
 type Clock func() time.Time
 
-type Database interface {
-	db.DBTX
-	Begin(ctx context.Context) (pgx.Tx, error)
-}
-
 type Server struct {
-	Logger  *slog.Logger
-	Config  Config
-	Queries *db.Queries
-	DB      Database
-	Clock   Clock
-	Stripe  *stripe.Client
+	Logger *slog.Logger
+	Config Config
+	Clock  Clock
+	Stripe *stripe.Client
 }
 
 func wrap(s Server, h josh.Handler) http.HandlerFunc {
@@ -40,7 +31,7 @@ func wrap(s Server, h josh.Handler) http.HandlerFunc {
 
 func wrapNoAuth(s Server, h josh.Handler) http.HandlerFunc {
 	h = withHeaders(h)
-	h = middlewares.With5(s.Config, s.Queries, s.DB, s.Clock, s.Stripe, h)
+	h = middlewares.With3(s.Config, s.Clock, s.Stripe, h)
 	// Register Sentry before Recover because it re-raises panics.
 	if s.Config.SentryDSN != "" {
 		h = Sentry(h)

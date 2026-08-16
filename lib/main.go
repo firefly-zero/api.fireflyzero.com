@@ -1,31 +1,20 @@
 package lib
 
 import (
-	"context"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
-	"regexp"
-	"strings"
 	"time"
 
-	"github.com/exaring/otelpgx"
-	"github.com/firefly-zero/api.fireflyzero.com/lib/db"
 	"github.com/getsentry/sentry-go"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rs/cors"
 	"github.com/stripe/stripe-go/v84"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/contrib/instrumentation/runtime"
 )
 
-var rexSQLName = regexp.MustCompile(`\-\-\s*name\:\s+[A-Za-z0-9]+`)
-
 func Run() error {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
 	config := Config{}
 	err := config.ParseEnv(os.Environ())
 	if err != nil {
@@ -61,58 +50,25 @@ func Run() error {
 	}
 	logger := slog.New(logHandler)
 
-	// Setup DB connection.
-	pgxConf, err := pgxpool.ParseConfig(config.PostgresURL)
-	if err != nil {
-		return fmt.Errorf("parse PostgreSQL URL: %v", err)
-	}
-	pgxConf.ConnConfig.Tracer = otelpgx.NewTracer(
-		otelpgx.WithTrimSQLInSpanName(), // required for the SpanNameFunc to be called
-		otelpgx.WithSpanNameFunc(getSQLSpanName),
-	)
-	dbpool, err := pgxpool.NewWithConfig(ctx, pgxConf)
-	if err != nil {
-		return fmt.Errorf("create connection pool: %v", err)
-	}
-	defer dbpool.Close()
-
-	queries := db.New(dbpool)
-
 	httpServer := setup(
 		config,
 		logger,
-		queries,
-		dbpool,
 	)
-	cancel()
 	return httpServer.ListenAndServe()
-}
-
-func getSQLSpanName(stmt string) string {
-	stmt = strings.TrimSpace(stmt)
-	name := rexSQLName.FindString(stmt)
-	if name != "" {
-		return name
-	}
-	return stmt
 }
 
 func setup(
 	config Config,
 	logger *slog.Logger,
-	queries *db.Queries,
-	dbpool Database,
 ) *http.Server {
 	if config.Debug {
 		logger.Warn("running in debug mode!")
 	}
 	server := Server{
-		Logger:  logger,
-		Config:  config,
-		Queries: queries,
-		DB:      dbpool,
-		Clock:   time.Now,
-		Stripe:  stripe.NewClient(config.StripeKey),
+		Logger: logger,
+		Config: config,
+		Clock:  time.Now,
+		Stripe: stripe.NewClient(config.StripeKey),
 	}
 	mux := http.NewServeMux()
 	server.RegisterEndpoints(mux)
