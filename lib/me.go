@@ -34,7 +34,7 @@ func withMe(h josh.Handler) josh.Handler {
 		jwt := josh.Must(josh.GetSingleton[JWT](r))
 		queries := josh.Must(josh.GetSingleton[*db.Queries](r))
 
-		myID := jwt.UserID
+		var myID dbtypes.UserID
 
 		isRegistration := r.Pattern == "POST /users/me"
 		if isRegistration {

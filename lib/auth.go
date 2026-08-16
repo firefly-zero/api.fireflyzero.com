@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/firefly-zero/api.fireflyzero.com/lib/dbtypes"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/orsinium-labs/josh"
@@ -16,16 +15,14 @@ type jwtClaims struct {
 	jwt.RegisteredClaims
 	Email       string `json:"email"`
 	AppMetadata struct {
-		UserName string `json:"user_name"`
-		UserID   string `json:"user_id"`
+		CustomerID CustomerID `json:"customer_id"`
 	} `json:"app_metadata"`
 }
 
 type JWT struct {
 	Email      string
 	SupabaseID uuid.UUID
-	UserID     dbtypes.UserID
-	UserName   string
+	CustomerID CustomerID
 }
 
 // For how long should live the token issued on dev.
@@ -63,8 +60,7 @@ func authValidator(secret string) func(string) (JWT, error) {
 		return JWT{
 			Email:      claims.Email,
 			SupabaseID: supabaseID,
-			UserID:     parseID[dbtypes.UserID](claims.AppMetadata.UserID),
-			UserName:   claims.AppMetadata.UserName,
+			CustomerID: claims.AppMetadata.CustomerID,
 		}, nil
 	}
 }

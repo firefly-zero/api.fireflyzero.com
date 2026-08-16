@@ -34,7 +34,6 @@ type Server struct {
 }
 
 func wrap(s Server, h josh.Handler) http.HandlerFunc {
-	h = withMe(h)
 	h = middlewares.Auth(authValidator(s.Config.AuthSecret), h)
 	return wrapNoAuth(s, h)
 }
@@ -78,7 +77,7 @@ func (s Server) getRouter() josh.Router {
 			GET: wrapNoAuth(s, listProducts),
 		},
 		"/checkout": {
-			POST: wrap(s, checkoutOrder),
+			POST: wrap(s, withCustomer(checkoutOrder)),
 		},
 		// Health checks.
 		"/healthz/live":  {GET: Live},

@@ -16,10 +16,6 @@ func formatDateTime(ts pgtype.Timestamptz) string {
 	return ts.Time.In(time.UTC).Format(time.RFC3339)
 }
 
-func formatID[I ~int64 | ~int32](id I) string {
-	return strconv.FormatInt(int64(id), 10)
-}
-
 func parseID[I ~int64 | ~int32](id string) I {
 	if id == "" {
 		return 0
