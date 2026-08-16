@@ -2,7 +2,6 @@ package lib
 
 import (
 	"context"
-	"strings"
 	"time"
 
 	"github.com/firefly-zero/api.fireflyzero.com/lib/db"
@@ -46,15 +45,6 @@ func checkoutOrder(r josh.Req) josh.Resp {
 	if err != nil {
 		return ServerErrorR(r, "failed to get user info", err)
 	}
-	order, err := queries.EnsureOrder(r.Context(), myID)
-	if err != nil {
-		return ServerErrorR(r, "failed to get order", err)
-	}
-	if order.Status != db.OrderStatusDraft {
-		return josh.BadRequest(josh.Error{
-			Detail: "you can checkout only draft order",
-		})
-	}
 
 	lineItems := make([]*stripe.CheckoutSessionCreateLineItemParams, len(attrs.Items))
 	for i, item := range attrs.Items {
@@ -75,19 +65,18 @@ func checkoutOrder(r josh.Req) josh.Resp {
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(r.Context()), 5*time.Second)
 	defer cancel()
 
-	orderIDStr := formatID(order.ID)
 	params := stripe.CheckoutSessionCreateParams{
-		Params: stripe.Params{
-			IdempotencyKey: new("order-checkout-" + orderIDStr),
-		},
+		// Params: stripe.Params{
+		// 	IdempotencyKey: new("order-checkout-" + orderIDStr),
+		// },
 		Mode:       new(string(stripe.CheckoutSessionModePayment)),
-		SuccessURL: new(formatOrderURL(attrs.SuccessURL, order.ID)),
-		CancelURL:  new(formatOrderURL(attrs.CancelURL, order.ID)),
+		SuccessURL: &attrs.SuccessURL,
+		CancelURL:  &attrs.CancelURL,
 		Customer:   &me.StripeID,
 		LineItems:  lineItems,
-		Metadata: map[string]string{
-			"order_id": orderIDStr,
-		},
+		// Metadata: map[string]string{
+		// 	"order_id": orderIDStr,
+		// },
 		ShippingAddressCollection: &stripe.CheckoutSessionCreateShippingAddressCollectionParams{
 			AllowedCountries: []*string{new("NL")},
 		},
@@ -102,24 +91,11 @@ func checkoutOrder(r josh.Req) josh.Resp {
 		return ServerErrorR(r, "failed to create checkout session", err)
 	}
 
-	_, err = queries.SetOrderStatus(ctx, db.SetOrderStatusParams{
-		Status: db.OrderStatusPending,
-		ID:     order.ID,
-		User:   myID,
-	})
-	if err != nil {
-		return ServerErrorR(r, "failed to update order status", err)
-	}
-
 	return josh.Ok(josh.Data[CheckoutResp]{
-		ID:   orderIDStr,
+		ID:   session.ID,
 		Type: "checkout",
 		Attributes: CheckoutResp{
 			RedirectURL: session.URL,
 		},
 	})
-}
-
-func formatOrderURL(template string, id dbtypes.OrderID) string {
-	return strings.ReplaceAll(template, "{order}", formatID(id))
 }

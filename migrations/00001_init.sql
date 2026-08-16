@@ -21,39 +21,6 @@ CREATE TABLE users (
     "updated_at"        timestamptz     NOT NULL DEFAULT now()
 );
 
-CREATE TYPE order_status AS ENUM (
-    -- The order is not paid yet. List of items can be adjusted.
-    'draft',
-    -- The customer is paying for the order or has paid for the order.
-    -- We haven't started the fulfillment yet.
-    'pending',
-    -- We started to fulfill the order.
-    -- The order cannot be canceled anymore.
-    'in_process',
-    -- All items in the order are fulfilled.
-    'fulfilled',
-    -- We failed to fulfill the order and need to resolve it with the customer.
-    -- For example, if the shipping address is invalid.
-    'on_hold',
-    -- The order has been canceled.
-    'canceled'
-);
-
-
-CREATE TABLE orders (
-    "id"                bigint          GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    "user"              bigint          NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    "status"            order_status    NOT NULL DEFAULT 'draft',
-    "paid"              boolean         NOT NULL DEFAULT false,
-    -- ID of the checkout session in Stripe.
-    "stripe_id"         varchar(128)    NULL DEFAULT NULL UNIQUE CHECK ("stripe_id" <> ''),
-
-    "created_at"        timestamptz     NOT NULL DEFAULT now(),
-    "updated_at"        timestamptz     NOT NULL DEFAULT now()
-);
-
-CREATE UNIQUE INDEX orders_unique_draft ON "orders" ("user") WHERE ("status" = 'draft');
-
 -- +goose StatementEnd
 
 -- +goose Down
