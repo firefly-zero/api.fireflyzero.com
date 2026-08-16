@@ -2,10 +2,8 @@ package schemas
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"io"
-	"log/slog"
 	"strconv"
 
 	"github.com/orsinium-labs/josh"
@@ -50,25 +48,4 @@ func ParseID[T any](name string, r josh.Req, body josh.Data[T]) (int32, josh.Res
 		return 0, josh.BadRequest(josh.Error{Detail: "the IDs in the URL and in the body don't match"})
 	}
 	return id, josh.NoResponse()
-}
-
-// Middleware validating the endpoint response against the given schema.
-func ValidateResponse(name string, h josh.Handler) josh.Handler {
-	schema := Get(name)
-	return func(r josh.Req) josh.Resp {
-		logger := josh.Must(josh.GetSingleton[*slog.Logger](r))
-		resp := h(r)
-		if resp.Data != nil {
-			raw, _ := json.Marshal(resp)
-			err := valdo.Validate(schema, raw)
-			if err != nil {
-				logger.WarnContext(
-					r.Context(), "response payload doesn't match the schema",
-					"schema", name,
-					"error", err,
-				)
-			}
-		}
-		return resp
-	}
 }
