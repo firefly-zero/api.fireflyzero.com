@@ -91,6 +91,9 @@ type SafeMap[K comparable, V any] struct {
 
 func (m *SafeMap[K, V]) Get(k K) (V, bool) {
 	m.mx.Lock()
+	if m.items == nil {
+		m.items = make(map[K]V, 0)
+	}
 	v, found := m.items[k]
 	m.mx.Unlock()
 	return v, found
@@ -98,6 +101,9 @@ func (m *SafeMap[K, V]) Get(k K) (V, bool) {
 
 func (m *SafeMap[K, V]) Set(k K, v V) {
 	m.mx.Lock()
+	if m.items == nil {
+		m.items = make(map[K]V, 0)
+	}
 	m.items[k] = v
 	m.mx.Unlock()
 }

@@ -32,7 +32,7 @@ func checkoutOrder(r josh.Req) josh.Resp {
 	client := josh.Must(josh.GetSingleton[*stripe.Client](r))
 	customerID := josh.Must(josh.GetSingleton[CustomerID](r))
 
-	body, err := schemas.ReadBody[CheckoutReq](r, "checkout", "_req")
+	body, err := schemas.ReadBody[CheckoutReq](r, "checkout", "_add")
 	if err != nil {
 		return josh.BadRequest(josh.Error{Detail: err.Error()})
 	}
@@ -80,6 +80,11 @@ func checkoutOrder(r josh.Req) josh.Resp {
 		AllowPromotionCodes: new(false),
 		AutomaticTax: &stripe.CheckoutSessionCreateAutomaticTaxParams{
 			Enabled: new(true),
+		},
+		CustomerUpdate: &stripe.CheckoutSessionCreateCustomerUpdateParams{
+			Address:  new("auto"),
+			Name:     new("auto"),
+			Shipping: new("auto"),
 		},
 		Currency: new(string(stripe.CurrencyEUR)),
 	}

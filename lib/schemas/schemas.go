@@ -56,9 +56,14 @@ func init() {
 		P("timezone", timezone).Optional(),
 	))
 
-	add("checkout", "_req", O(
+	item := O(
+		P("id", S(MinLen(7))),
+		P("quantity", Int(Min(1))),
+	)
+	add("checkout", "_add", O(
 		P("success_url", S(MinLen(11), MaxLen(200))),
 		P("cancel_url", S(MinLen(11), MaxLen(200))),
+		P("items", Array(item)),
 	))
 	add("checkout", "_resp", O(
 		P("redirect_url", S(MinLen(11), MaxLen(200))),
