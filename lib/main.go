@@ -1,6 +1,7 @@
 package lib
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -65,10 +66,11 @@ func setup(
 		logger.Warn("running in debug mode!")
 	}
 	server := Server{
-		Logger: logger,
-		Config: config,
-		Clock:  time.Now,
-		Stripe: stripe.NewClient(config.StripeKey),
+		Logger:  logger,
+		Config:  config,
+		KeyFunc: newKeyFunc(context.Background(), config),
+		Clock:   time.Now,
+		Stripe:  stripe.NewClient(config.StripeKey),
 	}
 	mux := http.NewServeMux()
 	server.RegisterEndpoints(mux)
@@ -77,14 +79,13 @@ func setup(
 	corsConfig := cors.Options{
 		AllowedMethods:      []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowedHeaders:      []string{"*"},
-		AllowCredentials:    false,
+		AllowCredentials:    true,
 		MaxAge:              3600, // 1 hour
 		AllowPrivateNetwork: config.Debug,
 	}
-	// TODO(@orsinium): enable AllowOrigins, set it to our prod app URL.
-	// if !config.Debug {
-	// 	corsConfig.AllowedOrigins = []string{"https://*.glind.app"}
-	// }
+	if !config.Debug {
+		corsConfig.AllowedOrigins = []string{"https://*.fireflyzero.com"}
+	}
 	cors := cors.New(corsConfig)
 	handler := otelhttp.NewHandler(mux, "rest-api")
 	handler = cors.Handler(handler)

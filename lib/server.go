@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/orsinium-labs/josh"
 	"github.com/orsinium-labs/josh/middlewares"
 	"github.com/stripe/stripe-go/v84"
@@ -17,15 +18,16 @@ import (
 type Clock func() time.Time
 
 type Server struct {
-	Logger *slog.Logger
-	Config Config
-	Clock  Clock
-	Stripe *stripe.Client
+	Logger  *slog.Logger
+	Config  Config
+	KeyFunc jwt.Keyfunc
+	Clock   Clock
+	Stripe  *stripe.Client
 }
 
 func wrap(s Server, h josh.Handler) http.HandlerFunc {
 	h = withUserInfo(h)
-	h = middlewares.Auth(authValidator(s.Config.AuthSecret), h)
+	h = middlewares.Auth(authValidator(s.KeyFunc), h)
 	return wrapNoAuth(s, h)
 }
 

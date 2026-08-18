@@ -14,13 +14,14 @@ type Order struct {
 }
 
 type CheckoutReq struct {
-	SuccessURL string            `json:"success_url"`
-	CancelURL  string            `json:"cancel_url"`
-	Items      []josh.Data[Item] `json:"items"`
+	SuccessURL string `json:"success_url"`
+	CancelURL  string `json:"cancel_url"`
+	Items      []Item `json:"items"`
 }
 
 type Item struct {
-	Quantity uint8 `json:"quantity"`
+	ID       string `json:"id"`
+	Quantity uint8  `json:"quantity"`
 }
 
 type CheckoutResp struct {
@@ -41,7 +42,7 @@ func checkoutOrder(r josh.Req) josh.Resp {
 	for i, item := range attrs.Items {
 		lineItem := stripe.CheckoutSessionCreateLineItemParams{
 			Price:    &item.ID,
-			Quantity: new(int64(item.Attributes.Quantity)),
+			Quantity: new(int64(item.Quantity)),
 			AdjustableQuantity: &stripe.CheckoutSessionCreateLineItemAdjustableQuantityParams{
 				Enabled: new(true),
 			},
@@ -53,6 +54,19 @@ func checkoutOrder(r josh.Req) josh.Resp {
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(r.Context()), 5*time.Second)
 	defer cancel()
 
+	// shipping := stripe.CheckoutSessionCreateShippingOptionParams{
+	// 	ShippingRateData: &stripe.CheckoutSessionCreateShippingOptionShippingRateDataParams{
+	// 		DeliveryEstimate: &stripe.CheckoutSessionCreateShippingOptionShippingRateDataDeliveryEstimateParams{},
+	// 		DisplayName:      new("Standard EU shipping"),
+	// 		FixedAmount: &stripe.CheckoutSessionCreateShippingOptionShippingRateDataFixedAmountParams{
+	// 			Amount:   new(int64),
+	// 			Currency: new(string(stripe.CurrencyEUR)),
+	// 		},
+	// 		TaxBehavior: new("inclusive"),
+	// 		TaxCode:     new("txcd_92010001"),
+	// 		Type:        new("fixed_amount"),
+	// 	},
+	// }
 	params := stripe.CheckoutSessionCreateParams{
 		Mode:       new(string(stripe.CheckoutSessionModePayment)),
 		SuccessURL: &attrs.SuccessURL,
@@ -62,6 +76,7 @@ func checkoutOrder(r josh.Req) josh.Resp {
 		ShippingAddressCollection: &stripe.CheckoutSessionCreateShippingAddressCollectionParams{
 			AllowedCountries: []*string{new("NL")},
 		},
+		// ShippingOptions:     []*stripe.CheckoutSessionCreateShippingOptionParams{&shipping},
 		AllowPromotionCodes: new(false),
 		AutomaticTax: &stripe.CheckoutSessionCreateAutomaticTaxParams{
 			Enabled: new(true),

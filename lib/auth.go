@@ -1,11 +1,13 @@
 package lib
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
 	"time"
 
+	"github.com/MicahParks/keyfunc/v3"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/orsinium-labs/josh"
@@ -25,17 +27,32 @@ type JWT struct {
 	CustomerID CustomerID
 }
 
-// For how long should live the token issued on dev.
-const JwtTTL = 8 * time.Hour
+const (
+	// For how long should live the token issued on dev.
+	jwtTTL    = 8 * time.Hour
+	jwkSetURL = "https://kxllbgiurjbkwtjarkec.supabase.co/auth/v1/.well-known/jwks.json"
+)
+
+func newKeyFunc(ctx context.Context, config Config) jwt.Keyfunc {
+	// TODO(@orsinium): pass http.Client from main.go
+	jwkSet := josh.Must(keyfunc.NewDefaultCtx(ctx, []string{jwkSetURL}))
+	return func(token *jwt.Token) (any, error) {
+		alg, _ := token.Header["alg"].(string)
+		if alg == "HS256" {
+			return []byte(config.AuthSecret), nil
+		}
+		return jwkSet.Keyfunc(token)
+	}
+}
 
 // Validate JWT token and extract the user email.
-func authValidator(secret string) func(string) (JWT, error) {
+func authValidator(keyFunc jwt.Keyfunc) func(string) (JWT, error) {
 	return func(rawToken string) (JWT, error) {
 		token, err := jwt.ParseWithClaims(
 			rawToken,
 			&jwtClaims{},
-			func(*jwt.Token) (any, error) { return []byte(secret), nil },
-			jwt.WithValidMethods([]string{"HS256"}),
+			keyFunc,
+			jwt.WithValidMethods([]string{"HS256", "ES256"}),
 			jwt.WithIssuedAt(),
 			jwt.WithLeeway(5*time.Second),
 		)
@@ -106,7 +123,7 @@ func newJWT(email string) *jwt.Token {
 			// Issued at
 			"iat": float64(now.Unix()),
 			// Expires at
-			"exp": float64(now.Add(JwtTTL).Unix()),
+			"exp": float64(now.Add(jwtTTL).Unix()),
 			// Not valid before
 			"nbf": float64(now.Add(-time.Second).Unix()),
 			// Issued by
