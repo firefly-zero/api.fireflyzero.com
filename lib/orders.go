@@ -101,3 +101,26 @@ func checkoutOrder(r josh.Req) josh.Resp {
 		},
 	})
 }
+
+func getOrder(r josh.Req) josh.Resp {
+	client := josh.Must(josh.GetSingleton[*stripe.Client](r))
+	customerID := josh.Must(josh.GetSingleton[CustomerID](r))
+
+	orderID := r.PathValue("order")
+	session, err := client.V1CheckoutSessions.Retrieve(r.Context(), orderID, nil)
+	if err != nil {
+		return ServerErrorR(r, "failed to get order info", err)
+	}
+	if session.Customer.ID != string(customerID) {
+		return josh.Forbidden(josh.Error{
+			Detail: "you don't have access to the given order",
+		})
+	}
+	return josh.Ok(josh.Data[Order]{
+		ID:   orderID,
+		Type: "order",
+		Attributes: Order{
+			Paid: session.PaymentStatus == "paid",
+		},
+	})
+}
