@@ -14,6 +14,7 @@ type Order struct {
 }
 
 type CheckoutReq struct {
+	Country    string `json:"country"`
 	SuccessURL string `json:"success_url"`
 	CancelURL  string `json:"cancel_url"`
 	Items      []Item `json:"items"`
@@ -47,33 +48,29 @@ func checkoutOrder(r josh.Req) josh.Resp {
 		lineItems[i] = &lineItem
 	}
 
+	shipping, err := calculateShipping(attrs.Country, attrs.Items)
+	if err != nil {
+		return josh.BadRequest(josh.Error{Detail: err.Error()})
+	}
+
 	// From this point on, the request cannot be canceled.
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(r.Context()), 5*time.Second)
 	defer cancel()
 
-	// shipping := stripe.CheckoutSessionCreateShippingOptionParams{
-	// 	ShippingRateData: &stripe.CheckoutSessionCreateShippingOptionShippingRateDataParams{
-	// 		DeliveryEstimate: &stripe.CheckoutSessionCreateShippingOptionShippingRateDataDeliveryEstimateParams{},
-	// 		DisplayName:      new("Standard EU shipping"),
-	// 		FixedAmount: &stripe.CheckoutSessionCreateShippingOptionShippingRateDataFixedAmountParams{
-	// 			Amount:   new(int64),
-	// 			Currency: new(string(stripe.CurrencyEUR)),
-	// 		},
-	// 		TaxBehavior: new("inclusive"),
-	// 		TaxCode:     new("txcd_92010001"),
-	// 		Type:        new("fixed_amount"),
-	// 	},
-	// }
 	params := stripe.CheckoutSessionCreateParams{
 		Mode:       new(string(stripe.CheckoutSessionModePayment)),
 		SuccessURL: &attrs.SuccessURL,
 		CancelURL:  &attrs.CancelURL,
 		Customer:   new(string(customerID)),
 		LineItems:  lineItems,
+		// Since we already calculated shipping costs,
+		// don't let the user change the shipping address.
 		ShippingAddressCollection: &stripe.CheckoutSessionCreateShippingAddressCollectionParams{
-			AllowedCountries: []*string{new("NL")},
+			AllowedCountries: []*string{&attrs.Country},
 		},
-		// ShippingOptions:     []*stripe.CheckoutSessionCreateShippingOptionParams{&shipping},
+		ShippingOptions: []*stripe.CheckoutSessionCreateShippingOptionParams{{
+			ShippingRateData: &shipping,
+		}},
 		AllowPromotionCodes: new(false),
 		AutomaticTax: &stripe.CheckoutSessionCreateAutomaticTaxParams{
 			Enabled: new(true),
