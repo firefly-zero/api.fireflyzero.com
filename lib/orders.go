@@ -43,9 +43,6 @@ func checkoutOrder(r josh.Req) josh.Resp {
 		lineItem := stripe.CheckoutSessionCreateLineItemParams{
 			Price:    &item.ID,
 			Quantity: new(int64(item.Quantity)),
-			AdjustableQuantity: &stripe.CheckoutSessionCreateLineItemAdjustableQuantityParams{
-				Enabled: new(true),
-			},
 		}
 		lineItems[i] = &lineItem
 	}
