@@ -1,10 +1,8 @@
 package lib
 
 import (
-	"cmp"
 	"errors"
 	"fmt"
-	"slices"
 	"strings"
 	"sync"
 
@@ -60,14 +58,6 @@ func ensureCustomer(r josh.Req) (*stripe.Customer, error) {
 		}))
 		if err != nil {
 			return nil, fmt.Errorf("search customer: %w", err)
-		}
-		if len(customers) > 1 {
-			slices.SortFunc(customers, func(a, b *stripe.Customer) int {
-				return cmp.Compare(a.Created, b.Created)
-			})
-			for _, customer := range customers[1:] {
-				_, _ = client.V1Customers.Delete(r.Context(), customer.ID, nil)
-			}
 		}
 		if len(customers) != 0 {
 			return customers[0], nil
