@@ -11,8 +11,6 @@ import (
 	"github.com/getsentry/sentry-go"
 	"github.com/rs/cors"
 	"github.com/stripe/stripe-go/v84"
-	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
-	"go.opentelemetry.io/contrib/instrumentation/runtime"
 )
 
 func Run() error {
@@ -35,20 +33,6 @@ func Run() error {
 		}
 	}
 	logHandler := NewLogHandler(config)
-	if config.Env != "" {
-		otel, err := NewOpenTelemetry(config)
-		if err != nil {
-			return fmt.Errorf("setup OpenTelemetry: %v", err)
-		}
-		defer otel.Close()
-		err = runtime.Start(
-			runtime.WithMinimumReadMemStatsInterval(time.Second),
-		)
-		if err != nil {
-			return fmt.Errorf("start OpenTelemetry runtime instrumentation: %v", err)
-		}
-		logHandler = otel.WrapLogHandler(logHandler)
-	}
 	logger := slog.New(logHandler)
 
 	httpServer := setup(
@@ -87,8 +71,7 @@ func setup(
 		corsConfig.AllowedOrigins = []string{"https://*.fireflyzero.com"}
 	}
 	cors := cors.New(corsConfig)
-	handler := otelhttp.NewHandler(mux, "rest-api")
-	handler = cors.Handler(handler)
+	handler := cors.Handler(mux)
 
 	httpServer := &http.Server{
 		Handler:           handler,

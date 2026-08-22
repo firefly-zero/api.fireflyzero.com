@@ -5,8 +5,6 @@ import (
 
 	"github.com/orsinium-labs/josh"
 	"github.com/orsinium-labs/josh/statuses"
-	semconv "go.opentelemetry.io/otel/semconv/v1.43.0"
-	"go.opentelemetry.io/otel/trace"
 )
 
 const contentType = "application/vnd.api+json"
@@ -52,11 +50,6 @@ func withHeaders(h josh.Handler) josh.Handler {
 		if versionDate.Year() < 2025 {
 			return josh.BadRequest(josh.Error{Detail: "unsupported X-Api-Version"})
 		}
-
-		span := trace.SpanFromContext(r.Context())
-		span.SetAttributes(
-			semconv.ServiceVersion(apiVersion),
-		)
 
 		return h(r)
 	}

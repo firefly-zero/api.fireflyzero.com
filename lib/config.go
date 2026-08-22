@@ -28,9 +28,6 @@ type Config struct {
 	// Secret connection string for sending events into Sentry.
 	SentryDSN string
 
-	// Secret key for sending OpenTelemetry data (logs, traces, metrics) into Honeykomb.
-	HoneycombKey string
-
 	// Secret key for accessing Stripe (payment system).
 	StripeKey string
 }
@@ -38,15 +35,14 @@ type Config struct {
 // Populate config from the passed env var pairs.
 func (c *Config) ParseEnv(pairs []string) error {
 	vars := configenv.Vars{
-		"DEBUG":         configenv.Required(configenv.Bool(&c.Debug)),
-		"AUTH_SECRET":   configenv.Required(configenv.String(&c.AuthSecret)),
-		"BUILD_TIME":    configenv.Required(configenv.String(&c.BuildTime)),
-		"COLOR":         configenv.Required(configenv.String(&c.Color)),
-		"SENTRY_DSN":    configenv.String(&c.SentryDSN),
-		"HONEYCOMB_KEY": configenv.String(&c.HoneycombKey),
-		"STRIPE_KEY":    configenv.String(&c.StripeKey),
-		"ENV":           configenv.String(&c.Env),
-		"PORT":          configenv.Required(configenv.Int(&c.Port)),
+		"DEBUG":       configenv.Required(configenv.Bool(&c.Debug)),
+		"AUTH_SECRET": configenv.Required(configenv.String(&c.AuthSecret)),
+		"BUILD_TIME":  configenv.Required(configenv.String(&c.BuildTime)),
+		"COLOR":       configenv.Required(configenv.String(&c.Color)),
+		"SENTRY_DSN":  configenv.String(&c.SentryDSN),
+		"STRIPE_KEY":  configenv.String(&c.StripeKey),
+		"ENV":         configenv.String(&c.Env),
+		"PORT":        configenv.Required(configenv.Int(&c.Port)),
 	}
 	return vars.Parse(configenv.Config{
 		Prefix:  "API_",

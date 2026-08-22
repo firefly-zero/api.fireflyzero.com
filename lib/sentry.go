@@ -6,8 +6,6 @@ import (
 
 	"github.com/getsentry/sentry-go"
 	"github.com/orsinium-labs/josh"
-	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
-	"go.opentelemetry.io/otel/trace"
 )
 
 func withUserInfo(h josh.Handler) josh.Handler {
@@ -25,12 +23,6 @@ func withUserInfo(h josh.Handler) josh.Handler {
 				})
 			}
 		}
-
-		span := trace.SpanFromContext(r.Context())
-		span.SetAttributes(
-			semconv.UserEmail(jwt.Email),
-			semconv.UserID(jwt.SupabaseID.String()),
-		)
 
 		return h(r)
 	}
