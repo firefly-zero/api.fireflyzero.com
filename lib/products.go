@@ -1,16 +1,19 @@
 package lib
 
 import (
+	"strings"
+
 	"github.com/orsinium-labs/josh"
 	"github.com/stripe/stripe-go/v84"
 )
 
 type Product struct {
-	Name        string               `json:"name"`
-	Slug        string               `json:"slug"`
-	Description string               `json:"description"`
-	Image       *string              `json:"image"`
-	Variants    []josh.Data[Variant] `json:"variants"`
+	Name         string               `json:"name"`
+	Slug         string               `json:"slug"`
+	Description  string               `json:"description"`
+	Image        *string              `json:"image"`
+	Variants     []josh.Data[Variant] `json:"variants"`
+	ProductSlugs []string             `json:"product_slugs"`
 }
 
 type Variant struct {
@@ -64,15 +67,23 @@ func formatProduct(p *stripe.Product, prices []*stripe.Price) josh.Data[Product]
 	if len(p.Images) != 0 {
 		image = &p.Images[0]
 	}
+	products := []string{}
+	for slug := range strings.SplitSeq(p.Metadata["products"], ",") {
+		slug = strings.TrimSpace(slug)
+		if slug != "" {
+			products = append(products, slug)
+		}
+	}
 	return josh.Data[Product]{
 		ID:   p.ID,
 		Type: "product",
 		Attributes: Product{
-			Name:        p.Name,
-			Slug:        p.Metadata["slug"],
-			Description: p.Description,
-			Image:       image,
-			Variants:    variants,
+			Name:         p.Name,
+			Slug:         p.Metadata["slug"],
+			Description:  p.Description,
+			Image:        image,
+			Variants:     variants,
+			ProductSlugs: products,
 		},
 	}
 }
