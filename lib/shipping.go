@@ -15,7 +15,7 @@ func calculateShipping(country string, items []Item) (Shipping, error) {
 	case "NL", "BE", "LU":
 		var qty int64 = 0
 		for _, item := range items {
-			qty = int64(item.Quantity)
+			qty = int64(item.Qty)
 		}
 		cost := (9 + 3*qty) * EUR
 		shipping := stripe.CheckoutSessionCreateShippingOptionShippingRateDataParams{

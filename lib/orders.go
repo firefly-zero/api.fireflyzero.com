@@ -21,8 +21,8 @@ type CheckoutReq struct {
 }
 
 type Item struct {
-	ID       string `json:"id"`
-	Quantity uint8  `json:"quantity"`
+	ID  string `json:"id"`
+	Qty uint8  `json:"qty"`
 }
 
 type CheckoutResp struct {
@@ -43,7 +43,7 @@ func checkoutOrder(r josh.Req) josh.Resp {
 	for i, item := range attrs.Items {
 		lineItem := stripe.CheckoutSessionCreateLineItemParams{
 			Price:    &item.ID,
-			Quantity: new(int64(item.Quantity)),
+			Quantity: new(int64(item.Qty)),
 		}
 		lineItems[i] = &lineItem
 	}
