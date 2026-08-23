@@ -1,8 +1,7 @@
 package lib
 
 import (
-	"context"
-	"time"
+	"strings"
 
 	"github.com/firefly-zero/api.fireflyzero.com/lib/schemas"
 	"github.com/orsinium-labs/josh"
@@ -17,6 +16,7 @@ type CheckoutReq struct {
 	Country    string `json:"country"`
 	SuccessURL string `json:"success_url"`
 	CancelURL  string `json:"cancel_url"`
+	Promotion  string `json:"promotion"`
 	Items      []Item `json:"items"`
 }
 
@@ -53,9 +53,33 @@ func checkoutOrder(r josh.Req) josh.Resp {
 		return josh.BadRequest(josh.Error{Detail: err.Error()})
 	}
 
-	// From this point on, the request cannot be canceled.
-	ctx, cancel := context.WithTimeout(context.WithoutCancel(r.Context()), 5*time.Second)
-	defer cancel()
+	// If a promo code is provided, check it and activate the discount.
+	var discounts []*stripe.CheckoutSessionCreateDiscountParams
+	if attrs.Promotion != "" {
+		code := strings.TrimSpace(attrs.Promotion)
+		code = strings.ReplaceAll(code, " ", "_")
+		codes, err := loadStripeList(client.V1PromotionCodes.List(r.Context(), &stripe.PromotionCodeListParams{
+			Active: new(true),
+			Code:   &code,
+		}))
+		if err != nil {
+			return ServerErrorR(r, "failed to check promotion code", err)
+		}
+		if len(codes) == 0 {
+			return josh.BadRequest(josh.Error{
+				Detail: "unknown promotion code",
+			})
+		}
+		codeInfo := codes[0]
+		if codeInfo.Customer != nil && codeInfo.Customer.ID != string(customerID) {
+			return josh.BadRequest(josh.Error{
+				Detail: "this promotion code is for someone else",
+			})
+		}
+		discounts = []*stripe.CheckoutSessionCreateDiscountParams{{
+			PromotionCode: &codeInfo.ID,
+		}}
+	}
 
 	params := stripe.CheckoutSessionCreateParams{
 		Mode:       new(string(stripe.CheckoutSessionModePayment)),
@@ -71,10 +95,10 @@ func checkoutOrder(r josh.Req) josh.Resp {
 		ShippingOptions: []*stripe.CheckoutSessionCreateShippingOptionParams{{
 			ShippingRateData: &shipping,
 		}},
-		AllowPromotionCodes: new(false),
 		AutomaticTax: &stripe.CheckoutSessionCreateAutomaticTaxParams{
 			Enabled: new(true),
 		},
+		Discounts: discounts,
 		CustomerUpdate: &stripe.CheckoutSessionCreateCustomerUpdateParams{
 			Address:  new("auto"),
 			Name:     new("auto"),
@@ -82,7 +106,7 @@ func checkoutOrder(r josh.Req) josh.Resp {
 		},
 		Currency: new(string(stripe.CurrencyEUR)),
 	}
-	session, err := client.V1CheckoutSessions.Create(ctx, &params)
+	session, err := client.V1CheckoutSessions.Create(r.Context(), &params)
 	if err != nil {
 		return ServerErrorR(r, "failed to create checkout session", err)
 	}

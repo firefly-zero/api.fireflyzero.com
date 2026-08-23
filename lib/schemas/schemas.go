@@ -9,12 +9,13 @@ func init() {
 	country := S(MinLen(2), MaxLen(2), Pattern(`^[A-Z][A-Z]$`))
 	item := O(
 		P("id", S(MinLen(7))),
-		P("quantity", Int(Min(1))),
+		P("qty", Int(Min(1))),
 	)
 	add("checkout", "_add", O(
 		P("country", country),
 		P("success_url", S(MinLen(11), MaxLen(200))),
 		P("cancel_url", S(MinLen(11), MaxLen(200))),
+		P("promotion", Nullable(S(MinLen(1), MaxLen(64)))),
 		P("items", Array(item)),
 	))
 	add("checkout", "_resp", O(
