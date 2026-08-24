@@ -21,6 +21,10 @@ func init() {
 	add("checkout", "_resp", O(
 		P("redirect_url", S(MinLen(11), MaxLen(200))),
 	))
+	add("shipping", "_add", O(
+		P("country", country),
+		P("items", Array(item)),
+	))
 
 	errSchema := O(
 		P("detail", Meta{

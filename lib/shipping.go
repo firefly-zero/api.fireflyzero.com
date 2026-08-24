@@ -3,14 +3,41 @@ package lib
 import (
 	"errors"
 
+	"github.com/firefly-zero/api.fireflyzero.com/lib/schemas"
+	"github.com/orsinium-labs/josh"
 	"github.com/stripe/stripe-go/v84"
 )
 
-type Shipping = stripe.CheckoutSessionCreateShippingOptionShippingRateDataParams
+type StripeShipping = stripe.CheckoutSessionCreateShippingOptionShippingRateDataParams
+
+type Shipping struct {
+	Name string `json:"name"`
+	Cost int64  `json:"cost"`
+}
 
 const EUR = 100
 
-func calculateShipping(country string, items []Item) (Shipping, error) {
+func queryShipping(r josh.Req) josh.Resp {
+	body, err := schemas.ReadBody[CheckoutReq](r, "shipping", "_add")
+	if err != nil {
+		return josh.BadRequest(josh.Error{Detail: err.Error()})
+	}
+	attrs := body.Attributes
+	shipping, err := calculateShipping(attrs.Country, attrs.Items)
+	if err != nil {
+		return josh.BadRequest(josh.Error{Detail: err.Error()})
+	}
+	return josh.Ok(josh.Data[Shipping]{
+		ID:   attrs.Country,
+		Type: "shipping",
+		Attributes: Shipping{
+			Name: *shipping.DisplayName,
+			Cost: *shipping.FixedAmount.Amount,
+		},
+	})
+}
+
+func calculateShipping(country string, items []Item) (StripeShipping, error) {
 	switch country {
 	case "NL", "BE", "LU":
 		var qty int64 = 0
@@ -19,7 +46,7 @@ func calculateShipping(country string, items []Item) (Shipping, error) {
 		}
 		cost := (9 + 3*qty) * EUR
 		shipping := stripe.CheckoutSessionCreateShippingOptionShippingRateDataParams{
-			DisplayName: new("Standard Benelux shipping via PostNL"),
+			DisplayName: new("Standard shipping to " + country + " via PostNL"),
 			DeliveryEstimate: &stripe.CheckoutSessionCreateShippingOptionShippingRateDataDeliveryEstimateParams{
 				Minimum: &stripe.CheckoutSessionCreateShippingOptionShippingRateDataDeliveryEstimateMinimumParams{
 					Unit:  new("day"),
@@ -40,6 +67,6 @@ func calculateShipping(country string, items []Item) (Shipping, error) {
 		}
 		return shipping, nil
 	default:
-		return Shipping{}, errors.New("cannot ship to the selected country")
+		return StripeShipping{}, errors.New("cannot ship to the selected country")
 	}
 }
