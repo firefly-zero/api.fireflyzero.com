@@ -59,23 +59,29 @@ func listProducts(r josh.Req) josh.Resp {
 
 	resps := make([]josh.Data[Product], len(products))
 	for i, product := range products {
-		productPrices := make([]*stripe.Price, 0)
-		for _, price := range prices {
-			if price.Product.ID == product.ID {
-				productPrices = append(productPrices, price)
-			}
-		}
-		slices.SortStableFunc(productPrices, func(a, b *stripe.Price) int {
-			aIdx := slices.Index(sizes, a.LookupKey)
-			bIdx := slices.Index(sizes, b.LookupKey)
-			if aIdx != -1 && bIdx != -1 {
-				return cmp.Compare(aIdx, bIdx)
-			}
-			return cmp.Compare(a.UnitAmount, b.UnitAmount)
-		})
+		productPrices := filterProductPrices(prices, product)
 		resps[i] = formatProduct(product, productPrices)
 	}
 	return josh.Ok(resps)
+}
+
+// Get the sorted list of prices for the given product.
+func filterProductPrices(prices []*stripe.Price, product *stripe.Product) []*stripe.Price {
+	productPrices := make([]*stripe.Price, 0)
+	for _, price := range prices {
+		if price.Product.ID == product.ID {
+			productPrices = append(productPrices, price)
+		}
+	}
+	slices.SortStableFunc(productPrices, func(a, b *stripe.Price) int {
+		aIdx := slices.Index(sizes, a.LookupKey)
+		bIdx := slices.Index(sizes, b.LookupKey)
+		if aIdx != -1 && bIdx != -1 {
+			return cmp.Compare(aIdx, bIdx)
+		}
+		return cmp.Compare(a.UnitAmount, b.UnitAmount)
+	})
+	return productPrices
 }
 
 func formatProduct(p *stripe.Product, prices []*stripe.Price) josh.Data[Product] {
