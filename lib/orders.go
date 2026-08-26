@@ -157,7 +157,7 @@ func getOrder(r josh.Req) josh.Resp {
 	}
 
 	return josh.Ok(josh.Data[Order]{
-		ID:   orderID[8:24],
+		ID:   session.PaymentIntent.ID[3:],
 		Type: "order",
 		Attributes: Order{
 			Paid:      session.PaymentStatus == "paid",
