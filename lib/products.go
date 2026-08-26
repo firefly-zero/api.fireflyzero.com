@@ -1,11 +1,25 @@
 package lib
 
 import (
+	"cmp"
+	"slices"
 	"strings"
 
 	"github.com/orsinium-labs/josh"
 	"github.com/stripe/stripe-go/v84"
 )
+
+var sizes = []string{
+	"XXXS",
+	"XXS",
+	"XS",
+	"S",
+	"M",
+	"L",
+	"XL",
+	"XXL",
+	"XXXL",
+}
 
 type Product struct {
 	Name        string               `json:"name"`
@@ -51,6 +65,14 @@ func listProducts(r josh.Req) josh.Resp {
 				productPrices = append(productPrices, price)
 			}
 		}
+		slices.SortStableFunc(productPrices, func(a, b *stripe.Price) int {
+			aIdx := slices.Index(sizes, a.LookupKey)
+			bIdx := slices.Index(sizes, b.LookupKey)
+			if aIdx != -1 && bIdx != -1 {
+				return cmp.Compare(aIdx, bIdx)
+			}
+			return cmp.Compare(a.UnitAmount, b.UnitAmount)
+		})
 		resps[i] = formatProduct(product, productPrices)
 	}
 	return josh.Ok(resps)
