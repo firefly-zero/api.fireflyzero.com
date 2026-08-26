@@ -2,6 +2,7 @@ package lib
 
 import (
 	"strings"
+	"time"
 
 	"github.com/firefly-zero/api.fireflyzero.com/lib/schemas"
 	"github.com/orsinium-labs/josh"
@@ -9,7 +10,10 @@ import (
 )
 
 type Order struct {
-	Paid bool `json:"paid"`
+	Paid      bool   `json:"paid"`
+	Amount    int64  `json:"amount"`
+	Currency  string `json:"currency"`
+	CreatedAt string `json:"created_at"`
 }
 
 type CheckoutReq struct {
@@ -134,11 +138,15 @@ func getOrder(r josh.Req) josh.Resp {
 			Detail: "you don't have access to the given order",
 		})
 	}
+	createdAt := time.Unix(session.Created, 0)
 	return josh.Ok(josh.Data[Order]{
 		ID:   orderID,
 		Type: "order",
 		Attributes: Order{
-			Paid: session.PaymentStatus == "paid",
+			Paid:      session.PaymentStatus == "paid",
+			Amount:    session.AmountTotal,
+			Currency:  string(session.Currency),
+			CreatedAt: createdAt.Format(time.RFC3339),
 		},
 	})
 }
