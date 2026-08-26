@@ -10,10 +10,16 @@ import (
 )
 
 type Order struct {
-	Paid      bool   `json:"paid"`
-	Amount    int64  `json:"amount"`
-	Currency  string `json:"currency"`
-	CreatedAt string `json:"created_at"`
+	Paid      bool        `json:"paid"`
+	Amount    int64       `json:"amount"`
+	Currency  string      `json:"currency"`
+	CreatedAt string      `json:"created_at"`
+	Items     []OrderItem `json:"items"`
+}
+
+type OrderItem struct {
+	Name string `json:"name"`
+	Qty  int64  `json:"qty"`
 }
 
 type CheckoutReq struct {
@@ -129,7 +135,9 @@ func getOrder(r josh.Req) josh.Resp {
 	customerID := josh.Must(josh.GetSingleton[CustomerID](r))
 
 	orderID := r.PathValue("order")
-	session, err := client.V1CheckoutSessions.Retrieve(r.Context(), orderID, nil)
+	session, err := client.V1CheckoutSessions.Retrieve(r.Context(), orderID, &stripe.CheckoutSessionRetrieveParams{
+		Expand: []*string{new("line_items")},
+	})
 	if err != nil {
 		return ServerErrorR(r, "failed to get order info", err)
 	}
@@ -139,14 +147,24 @@ func getOrder(r josh.Req) josh.Resp {
 		})
 	}
 	createdAt := time.Unix(session.Created, 0)
+
+	items := make([]OrderItem, 0, len(session.LineItems.Data))
+	for _, item := range session.LineItems.Data {
+		items = append(items, OrderItem{
+			Name: item.Description,
+			Qty:  item.Quantity,
+		})
+	}
+
 	return josh.Ok(josh.Data[Order]{
-		ID:   orderID,
+		ID:   orderID[8:24],
 		Type: "order",
 		Attributes: Order{
 			Paid:      session.PaymentStatus == "paid",
 			Amount:    session.AmountTotal,
 			Currency:  string(session.Currency),
 			CreatedAt: createdAt.Format(time.RFC3339),
+			Items:     items,
 		},
 	})
 }
