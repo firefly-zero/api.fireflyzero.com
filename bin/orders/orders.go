@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/firefly-zero/api.fireflyzero.com/lib"
@@ -26,6 +27,7 @@ func run() error {
 	}
 	client := stripe.NewClient(config.StripeKey)
 	ctx := context.Background()
+
 	sessions := client.V1CheckoutSessions.List(ctx, &stripe.CheckoutSessionListParams{
 		Expand: []*string{
 			new("data.line_items"),
@@ -34,30 +36,57 @@ func run() error {
 		},
 		Status: new("complete"),
 	})
+	productsList := client.V1Products.List(ctx, nil)
+	products := map[string]*stripe.Product{}
+	productSlugs := map[string]*stripe.Product{}
+	for product, err := range productsList {
+		if err != nil {
+			return fmt.Errorf("list products: %v", err)
+		}
+		products[product.ID] = product
+		productSlugs[product.Metadata["slug"]] = product
+	}
+
 	for session, err := range sessions {
 		if err != nil {
 			return fmt.Errorf("list checkout sessions: %v", err)
 		}
-		fmt.Println("- id:          " + session.PaymentIntent.ID)
-		fmt.Println("  email:       " + session.Customer.Email)
-		fmt.Println("  created:     " + time.Unix(session.Created, 0).String())
-		fmt.Printf("  amount:      %d %s\n", session.AmountTotal/100, session.Currency)
+		fmt.Println("- id:               \033[94m" + session.PaymentIntent.ID + "\033[0m")
+		fmt.Println("  email:            " + session.Customer.Email)
+		fmt.Println("  created:          " + time.Unix(session.Created, 0).String())
+		fmt.Printf("  amount:           %d %s\n", session.AmountTotal/100, session.Currency)
 		fmt.Println("  address:")
-		fmt.Println("    city:      " + session.PaymentIntent.Shipping.Address.City)
-		fmt.Println("    country:   " + session.PaymentIntent.Shipping.Address.Country)
-		fmt.Println("    line1:     " + session.PaymentIntent.Shipping.Address.Line1)
+		fmt.Println("    city:           " + session.PaymentIntent.Shipping.Address.City)
+		fmt.Println("    country:        " + session.PaymentIntent.Shipping.Address.Country)
+		fmt.Println("    line1:          " + session.PaymentIntent.Shipping.Address.Line1)
 		if session.PaymentIntent.Shipping.Address.Line2 != "" {
-			fmt.Println("    line2:     " + session.PaymentIntent.Shipping.Address.Line2)
+			fmt.Println("    line2:          " + session.PaymentIntent.Shipping.Address.Line2)
 		}
-		fmt.Println("    zip:       " + session.PaymentIntent.Shipping.Address.PostalCode)
+		fmt.Println("    zip:            " + session.PaymentIntent.Shipping.Address.PostalCode)
 		if session.PaymentIntent.Shipping.Address.State != "" {
-			fmt.Println("    state:     " + session.PaymentIntent.Shipping.Address.State)
+			fmt.Println("    state:          " + session.PaymentIntent.Shipping.Address.State)
 		}
 		fmt.Println("  items:")
 		for _, item := range session.LineItems.Data {
-			fmt.Println("    - name:    " + item.Description)
+			fmt.Println("    - name:         \033[92m" + item.Description + "\033[0m")
+			if item.Quantity != 1 {
+				fmt.Printf("    - qty:          %d\n", item.Quantity)
+			}
 			if item.Price.LookupKey != "" {
-				fmt.Println("      variant: " + item.Price.LookupKey)
+				fmt.Println("      variant:      " + item.Price.LookupKey)
+			}
+			product := products[item.Price.Product.ID]
+			if product != nil {
+				if product.Metadata["products"] != "" {
+					fmt.Println("      bundle:")
+					slugs := strings.SplitSeq(product.Metadata["products"], ",")
+					for slug := range slugs {
+						if slug != "" {
+							subProduct := productSlugs[slug]
+							fmt.Println("        - name:     \033[95m" + subProduct.Name + "\033[0m")
+						}
+					}
+				}
 			}
 		}
 		fmt.Println()
