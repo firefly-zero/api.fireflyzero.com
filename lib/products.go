@@ -57,12 +57,35 @@ func listProducts(r josh.Req) josh.Resp {
 		return ServerErrorR(r, "failed to retrieve the list of prices", err)
 	}
 
+	slices.SortStableFunc(products, cmpProducts)
 	resps := make([]josh.Data[Product], len(products))
 	for i, product := range products {
 		productPrices := filterProductPrices(prices, product)
 		resps[i] = formatProduct(product, productPrices)
 	}
 	return josh.Ok(resps)
+}
+
+func cmpProducts(a, b *stripe.Product) int {
+	// If both products have position set, sort by the position.
+	aPos := a.Metadata["position"]
+	bPos := a.Metadata["position"]
+	if aPos != bPos {
+		return cmp.Compare(aPos, bPos)
+	}
+
+	// Bundles go next.
+	aBundle := a.Metadata["products"] != ""
+	bBundle := b.Metadata["products"] != ""
+	if aBundle != bBundle {
+		if aBundle {
+			return -1
+		} else {
+			return 1
+		}
+	}
+
+	return cmp.Compare(a.Name, b.Name)
 }
 
 // Get the sorted list of prices for the given product.
