@@ -24,16 +24,28 @@ type OrderItem struct {
 }
 
 type CheckoutReq struct {
-	Country    string `json:"country"`
+	// The country code where the order will be shipped.
+	//
+	// That's the only part of the shipping address that we care about
+	// because that's all we need for estimating the shipping cost.
+	// The rest of the address will be collected by Stripe at checkout.
+	Country string `json:"country"`
+	// URL to redirect the user to after successful payment.
 	SuccessURL string `json:"success_url"`
-	CancelURL  string `json:"cancel_url"`
-	Promotion  string `json:"promotion"`
-	Items      []Item `json:"items"`
+	// URL to redirect the user to if the press "Back" in the Stripe UI.
+	CancelURL string `json:"cancel_url"`
+	// User-provided promo code, if any.
+	Promotion string `json:"promotion"`
+	// Items in the cart.
+	Items []Item `json:"items"`
 }
 
 type Item struct {
-	ID       string   `json:"id"`
-	Qty      uint8    `json:"qty"`
+	// The Stripe Price ID.
+	ID string `json:"id"`
+	// How many units to buy.
+	Qty uint8 `json:"qty"`
+	// If the item is a bundle, its sub-products might have variants.
 	Variants []string `json:"variants"`
 }
 
@@ -41,6 +53,9 @@ type CheckoutResp struct {
 	RedirectURL string `json:"redirect_url"`
 }
 
+// POST /checkout
+//
+// Create a new checkout session in Stripe and redirect the user there.
 func checkoutOrder(r josh.Req) josh.Resp {
 	client := josh.Must(josh.GetSingleton[*stripe.Client](r))
 	customerID := josh.Must(josh.GetSingleton[CustomerID](r))
@@ -160,6 +175,11 @@ func checkoutOrder(r josh.Req) josh.Resp {
 	})
 }
 
+// GET /order/{order}
+//
+// Get information about a specific order.
+//
+// Used by the order confirmation page.
 func getOrder(r josh.Req) josh.Resp {
 	client := josh.Must(josh.GetSingleton[*stripe.Client](r))
 	customerID := josh.Must(josh.GetSingleton[CustomerID](r))
@@ -169,6 +189,12 @@ func getOrder(r josh.Req) josh.Resp {
 		Expand: []*string{new("line_items")},
 	})
 	if err != nil {
+		stripeErr, isStripeErr := err.(*stripe.Error)
+		if isStripeErr && stripeErr.Code == "resource_missing" {
+			return josh.NotFound(josh.Error{
+				Detail: "order not found",
+			})
+		}
 		return ServerErrorR(r, "failed to get order info", err)
 	}
 	if session.Customer.ID != string(customerID) {

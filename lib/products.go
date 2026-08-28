@@ -9,6 +9,7 @@ import (
 	"github.com/stripe/stripe-go/v84"
 )
 
+// The order in which t-shirt sizes should be listed.
 var sizes = []string{
 	"XXXS",
 	"XXS",
@@ -22,24 +23,56 @@ var sizes = []string{
 }
 
 type Product struct {
-	Name        string               `json:"name"`
-	Slug        string               `json:"slug"`
-	Description string               `json:"description"`
-	Image       *string              `json:"image"`
-	Variants    []josh.Data[Variant] `json:"variants"`
-	Products    []BundleProduct      `json:"products"`
+	// Human-readable unique title of the product.
+	Name string `json:"name"`
+
+	// Human-readable (but not intended to be displayed) unique reference to the product.
+	//
+	// Used to detect donations (which are displayed differently in the UI).
+	Slug string `json:"slug"`
+
+	// Human-readable plaintext short description of the product.
+	Description string `json:"description"`
+
+	// URL pointing to the cover image for the product.
+	//
+	// Hosted on Stripe CDN. Can have any ratio.
+	// It's up to the client (frontend) to crop it to the right size.
+	Image *string `json:"image"`
+
+	// Product variants, like different t-shirt sizes.
+	//
+	// Every product has at least one variant.
+	Variants []josh.Data[Variant] `json:"variants"`
+
+	// If the product is a bundle, here will be the list of references
+	// to the products in that bundle.
+	Products []BundleProduct `json:"products"`
 }
 
+// Reference to a sub-product in a bundle.
 type BundleProduct struct {
 	Slug string `json:"slug"`
 	Qty  int32  `json:"qty"`
 }
 
+// A product variant, like a specific size of a t-shirt.
+//
+// Represented as Price in Stripe. Every Product has at least one Variant.
 type Variant struct {
-	Name  string `json:"name"`
-	Price int32  `json:"price"`
+	// The human-readable name of the variant.
+	//
+	// Usually empty for products with a single variant.
+	// Never empty for products with multiple variants.
+	Name string `json:"name"`
+	// How much it costs in euros.
+	Price int32 `json:"price"`
 }
 
+// GET /products
+//
+// List all products currently available for sale
+// (including products only available in a bundle).
 func listProducts(r josh.Req) josh.Resp {
 	client := josh.Must(josh.GetSingleton[*stripe.Client](r))
 

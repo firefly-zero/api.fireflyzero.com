@@ -17,6 +17,12 @@ type Shipping struct {
 
 const EUR = 100
 
+// POST /shipping
+//
+// Get shipping info (including costs) for the given country and items.
+//
+// Semantically equivalent to QUERY verb (GET with body)
+// which is not well-supported by browsers just yet.
 func queryShipping(r josh.Req) josh.Resp {
 	body, err := schemas.ReadBody[CheckoutReq](r, "shipping", "_add")
 	if err != nil {
