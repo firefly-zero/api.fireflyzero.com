@@ -27,7 +27,11 @@ func run() error {
 	client := stripe.NewClient(config.StripeKey)
 	ctx := context.Background()
 	sessions := client.V1CheckoutSessions.List(ctx, &stripe.CheckoutSessionListParams{
-		Expand: []*string{new("data.line_items"), new("data.customer")},
+		Expand: []*string{
+			new("data.line_items"),
+			new("data.customer"),
+			new("data.payment_intent.shipping.address"),
+		},
 		Status: new("complete"),
 	})
 	for session, err := range sessions {
@@ -38,6 +42,17 @@ func run() error {
 		fmt.Println("  email:       " + session.Customer.Email)
 		fmt.Println("  created:     " + time.Unix(session.Created, 0).String())
 		fmt.Printf("  amount:      %d %s\n", session.AmountTotal/100, session.Currency)
+		fmt.Println("  address:")
+		fmt.Println("    city:      " + session.PaymentIntent.Shipping.Address.City)
+		fmt.Println("    country:   " + session.PaymentIntent.Shipping.Address.Country)
+		fmt.Println("    line1:     " + session.PaymentIntent.Shipping.Address.Line1)
+		if session.PaymentIntent.Shipping.Address.Line2 != "" {
+			fmt.Println("    line2:     " + session.PaymentIntent.Shipping.Address.Line2)
+		}
+		fmt.Println("    zip:       " + session.PaymentIntent.Shipping.Address.PostalCode)
+		if session.PaymentIntent.Shipping.Address.State != "" {
+			fmt.Println("    state:     " + session.PaymentIntent.Shipping.Address.State)
+		}
 		fmt.Println("  items:")
 		for _, item := range session.LineItems.Data {
 			fmt.Println("    - name:    " + item.Description)
