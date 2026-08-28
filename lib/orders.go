@@ -1,6 +1,7 @@
 package lib
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
@@ -31,8 +32,9 @@ type CheckoutReq struct {
 }
 
 type Item struct {
-	ID  string `json:"id"`
-	Qty uint8  `json:"qty"`
+	ID       string   `json:"id"`
+	Qty      uint8    `json:"qty"`
+	Variants []string `json:"variants"`
 }
 
 type CheckoutResp struct {
@@ -49,11 +51,39 @@ func checkoutOrder(r josh.Req) josh.Resp {
 	}
 	attrs := body.Attributes
 
+	pricesList, err := loadStripeList(client.V1Prices.List(r.Context(), &stripe.PriceListParams{
+		Active: new(true),
+	}))
+	if err != nil {
+		return ServerErrorR(r, "failed to list prices", err)
+	}
+	prices := make(map[string]*stripe.Price)
+	for _, price := range pricesList {
+		prices[price.ID] = price
+	}
 	lineItems := make([]*stripe.CheckoutSessionCreateLineItemParams, len(attrs.Items))
 	for i, item := range attrs.Items {
+		price := prices[item.ID]
+		if price == nil {
+			return josh.BadRequest(josh.Error{
+				Detail: fmt.Sprintf("price for item #%d not found", i+1),
+			})
+		}
 		lineItem := stripe.CheckoutSessionCreateLineItemParams{
 			Price:    &item.ID,
 			Quantity: new(int64(item.Qty)),
+			Metadata: map[string]string{},
+		}
+		if len(item.Variants) != 0 {
+			for j, variantID := range item.Variants {
+				price := prices[variantID]
+				if price == nil {
+					return josh.BadRequest(josh.Error{
+						Detail: fmt.Sprintf("price for variant #%d of item #%d not found", j+1, i+1),
+					})
+				}
+			}
+			lineItem.Metadata["variants"] = strings.Join(item.Variants, ",")
 		}
 		lineItems[i] = &lineItem
 	}

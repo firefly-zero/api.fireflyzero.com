@@ -36,6 +36,7 @@ func run() error {
 		},
 		Status: new("complete"),
 	})
+
 	productsList := client.V1Products.List(ctx, nil)
 	products := map[string]*stripe.Product{}
 	productSlugs := map[string]*stripe.Product{}
@@ -45,6 +46,15 @@ func run() error {
 		}
 		products[product.ID] = product
 		productSlugs[product.Metadata["slug"]] = product
+	}
+
+	pricesList := client.V1Prices.List(ctx, nil)
+	prices := map[string]*stripe.Price{}
+	for price, err := range pricesList {
+		if err != nil {
+			return fmt.Errorf("list prices: %v", err)
+		}
+		prices[price.ID] = price
 	}
 
 	for session, err := range sessions {
@@ -66,6 +76,8 @@ func run() error {
 		if session.PaymentIntent.Shipping.Address.State != "" {
 			fmt.Println("    state:          " + session.PaymentIntent.Shipping.Address.State)
 		}
+
+		// Items in the order.
 		fmt.Println("  items:")
 		for _, item := range session.LineItems.Data {
 			fmt.Println("    - name:         \033[92m" + item.Description + "\033[0m")
@@ -88,7 +100,17 @@ func run() error {
 					}
 				}
 			}
+			if item.Metadata["variants"] != "" {
+				fmt.Println("      variants:")
+				for variantID := range strings.SplitSeq(item.Metadata["variants"], ",") {
+					price := prices[variantID]
+					if price != nil {
+						fmt.Println("        - \033[93m" + price.LookupKey + "\033[0m")
+					}
+				}
+			}
 		}
+
 		fmt.Println()
 	}
 	return nil

@@ -10,6 +10,7 @@ func init() {
 	item := O(
 		P("id", S(MinLen(7))),
 		P("qty", Int(Min(1))),
+		P("variants", Nullable(A(S(MinLen(2), MaxLen(30)), MaxItems(1)))),
 	)
 	add("checkout", "_add", O(
 		P("country", country),
