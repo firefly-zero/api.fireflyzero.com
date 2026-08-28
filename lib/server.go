@@ -64,6 +64,9 @@ func (s Server) getRouter() josh.Router {
 		"/order/{order}": {
 			GET: wrap(s, withCustomer(getOrder)),
 		},
+		"/orders": {
+			GET: wrap(s, withCustomer(listOrders)),
+		},
 		"/shipping": {
 			POST: wrap(s, withCustomer(queryShipping)),
 		},

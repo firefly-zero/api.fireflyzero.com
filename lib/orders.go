@@ -202,8 +202,32 @@ func getOrder(r josh.Req) josh.Resp {
 			Detail: "you don't have access to the given order",
 		})
 	}
-	createdAt := time.Unix(session.Created, 0)
+	return josh.Ok(formatOrder(session))
+}
 
+// GET /orders
+//
+// List all orders of the user.
+func listOrders(r josh.Req) josh.Resp {
+	client := josh.Must(josh.GetSingleton[*stripe.Client](r))
+	customerID := josh.Must(josh.GetSingleton[CustomerID](r))
+
+	sessions, err := loadStripeList(client.V1CheckoutSessions.List(r.Context(), &stripe.CheckoutSessionListParams{
+		Customer: new(string(customerID)),
+		Status:   new("complete"),
+		Expand:   []*string{new("data.line_items")},
+	}))
+	if err != nil {
+		return ServerErrorR(r, "failed to get order info", err)
+	}
+	resps := make([]josh.Data[Order], len(sessions))
+	for i, session := range sessions {
+		resps[i] = formatOrder(session)
+	}
+	return josh.Ok(resps)
+}
+
+func formatOrder(session *stripe.CheckoutSession) josh.Data[Order] {
 	items := make([]OrderItem, 0, len(session.LineItems.Data))
 	for _, item := range session.LineItems.Data {
 		items = append(items, OrderItem{
@@ -211,9 +235,13 @@ func getOrder(r josh.Req) josh.Resp {
 			Qty:  item.Quantity,
 		})
 	}
-
-	return josh.Ok(josh.Data[Order]{
-		ID:   session.PaymentIntent.ID[3:],
+	createdAt := time.Unix(session.Created, 0)
+	id := ""
+	if session.PaymentIntent != nil {
+		id = session.PaymentIntent.ID[3:]
+	}
+	return josh.Data[Order]{
+		ID:   id,
 		Type: "order",
 		Attributes: Order{
 			Paid:      session.PaymentStatus == "paid",
@@ -222,5 +250,5 @@ func getOrder(r josh.Req) josh.Resp {
 			CreatedAt: createdAt.Format(time.RFC3339),
 			Items:     items,
 		},
-	})
+	}
 }
