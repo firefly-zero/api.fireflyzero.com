@@ -55,21 +55,12 @@ func (s Server) RegisterEndpoints(mux *http.ServeMux) {
 
 func (s Server) getRouter() josh.Router {
 	router := josh.Router{
-		"/products": {
-			GET: wrapNoAuth(s, listProducts),
-		},
-		"/checkout": {
-			POST: wrap(s, withCustomer(checkoutOrder)),
-		},
-		"/order/{order}": {
-			GET: wrap(s, withCustomer(getOrder)),
-		},
-		"/orders": {
-			GET: wrap(s, withCustomer(listOrders)),
-		},
-		"/shipping": {
-			POST: wrap(s, withCustomer(queryShipping)),
-		},
+		"/products":      {GET: wrapNoAuth(s, listProducts)},
+		"/goal":          {GET: wrapNoAuth(s, getGoal)},
+		"/checkout":      {POST: wrap(s, withCustomer(checkoutOrder))},
+		"/order/{order}": {GET: wrap(s, withCustomer(getOrder))},
+		"/orders":        {GET: wrap(s, withCustomer(listOrders))},
+		"/shipping":      {POST: wrap(s, withCustomer(queryShipping))},
 		// Health checks.
 		"/healthz/live":  {GET: Live},
 		"/healthz/ready": {GET: Ready},
