@@ -58,6 +58,7 @@ func (s Server) getRouter() josh.Router {
 	router := josh.Router{
 		"/products":      {GET: wrapNoAuth(s, withCache(10*time.Minute, listProducts))},
 		"/goal":          {GET: wrapNoAuth(s, withCache(5*time.Minute, getGoal))},
+		"/rates":         {GET: wrapNoAuth(s, withCache(5*time.Minute, getExchangeRates))},
 		"/checkout":      {POST: wrap(s, withCustomer(checkoutOrder))},
 		"/order/{order}": {GET: wrap(s, withCustomer(getOrder))},
 		"/orders":        {GET: wrap(s, withCustomer(listOrders))},
