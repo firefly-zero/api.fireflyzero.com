@@ -45,6 +45,9 @@ type Product struct {
 	// However, it still should be displayed.
 	OutOfStock bool `json:"out_of_stock"`
 
+	// The product can be purchased only as part of a bundle.
+	Hidden bool `json:"hidden"`
+
 	// Badge message to display, like "limited edition".
 	Badge *string `json:"badge"`
 
@@ -201,6 +204,7 @@ func formatProduct(p *stripe.Product, prices []*stripe.Price) josh.Data[Product]
 			Badge:       badge,
 			BadgeIcon:   badgeIcon,
 			OutOfStock:  p.Metadata["out-of-stock"] == "true",
+			Hidden:      p.Metadata["hidden"] == "true",
 			Variants:    variants,
 			Products:    products,
 		},

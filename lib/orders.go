@@ -90,6 +90,11 @@ func checkoutOrder(r josh.Req) josh.Resp {
 				Detail: fmt.Sprintf("item #%d (%s) is out of stock", i+1, price.Product.Name),
 			})
 		}
+		if price.Product.Metadata["hidden"] == "true" {
+			return josh.BadRequest(josh.Error{
+				Detail: fmt.Sprintf("item #%d (%s) cannot be purchased directly", i+1, price.Product.Name),
+			})
+		}
 		lineItem := stripe.CheckoutSessionCreateLineItemParams{
 			Price:    &item.ID,
 			Quantity: new(int64(item.Qty)),
