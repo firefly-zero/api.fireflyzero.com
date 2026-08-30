@@ -45,6 +45,12 @@ type Product struct {
 	// However, it still should be displayed.
 	OutOfStock bool `json:"out_of_stock"`
 
+	// Badge message to display, like "limited edition".
+	Badge *string `json:"badge"`
+
+	// Display with icon on the badge.
+	BadgeIcon *string `json:"badge_icon"`
+
 	// Product variants, like different t-shirt sizes.
 	//
 	// Every product has at least one variant.
@@ -161,6 +167,14 @@ func formatProduct(p *stripe.Product, prices []*stripe.Price) josh.Data[Product]
 	if len(p.Images) != 0 {
 		image = &p.Images[0]
 	}
+	var badge *string
+	if p.Metadata["badge"] != "" {
+		badge = new(p.Metadata["badge"])
+	}
+	var badgeIcon *string
+	if p.Metadata["badge-icon"] != "" {
+		badgeIcon = new(p.Metadata["badge-icon"])
+	}
 	products := []BundleProduct{}
 	for slug := range strings.SplitSeq(p.Metadata["products"], ",") {
 		slug = strings.TrimSpace(slug)
@@ -184,6 +198,8 @@ func formatProduct(p *stripe.Product, prices []*stripe.Price) josh.Data[Product]
 			Slug:        p.Metadata["slug"],
 			Description: p.Description,
 			Image:       image,
+			Badge:       badge,
+			BadgeIcon:   badgeIcon,
 			OutOfStock:  p.Metadata["out-of-stock"] == "true",
 			Variants:    variants,
 			Products:    products,
