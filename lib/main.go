@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/getsentry/sentry-go"
+	"github.com/jellydator/ttlcache/v3"
 	"github.com/rs/cors"
 	"github.com/stripe/stripe-go/v84"
 )
@@ -35,9 +36,17 @@ func Run() error {
 	logHandler := NewLogHandler(config)
 	logger := slog.New(logHandler)
 
+	cache := ttlcache.New(
+		ttlcache.WithCapacity[string, any](10_000),
+		ttlcache.WithTTL[string, any](10*time.Minute),
+	)
+	go cache.Start()
+	defer cache.Stop()
+
 	httpServer := setup(
 		config,
 		logger,
+		cache,
 	)
 	return httpServer.ListenAndServe()
 }
@@ -45,6 +54,7 @@ func Run() error {
 func setup(
 	config Config,
 	logger *slog.Logger,
+	cache Cache,
 ) *http.Server {
 	if config.Debug {
 		logger.Warn("running in debug mode!")
@@ -55,6 +65,7 @@ func setup(
 		KeyFunc: newKeyFunc(context.Background(), config),
 		Clock:   time.Now,
 		Stripe:  stripe.NewClient(config.StripeKey),
+		Cache:   cache,
 	}
 	mux := http.NewServeMux()
 	server.RegisterEndpoints(mux)

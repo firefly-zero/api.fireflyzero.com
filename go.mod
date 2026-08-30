@@ -5,6 +5,7 @@ go 1.26.2
 require (
 	github.com/getsentry/sentry-go/slog v0.48.0
 	github.com/google/go-cmp v0.7.0
+	github.com/jellydator/ttlcache/v3 v3.4.1
 	github.com/lmittmann/tint v1.2.0
 	github.com/matryer/is v1.4.1
 	github.com/orsinium-labs/configenv v1.1.0
@@ -14,6 +15,7 @@ require (
 
 require (
 	github.com/MicahParks/jwkset v0.11.1 // indirect
+	golang.org/x/sync v0.22.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
 )
 

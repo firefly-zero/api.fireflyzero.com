@@ -23,6 +23,7 @@ type Server struct {
 	KeyFunc jwt.Keyfunc
 	Clock   Clock
 	Stripe  *stripe.Client
+	Cache   Cache
 }
 
 func wrap(s Server, h josh.Handler) http.HandlerFunc {
@@ -33,7 +34,7 @@ func wrap(s Server, h josh.Handler) http.HandlerFunc {
 
 func wrapNoAuth(s Server, h josh.Handler) http.HandlerFunc {
 	h = withHeaders(h)
-	h = middlewares.With3(s.Config, s.Clock, s.Stripe, h)
+	h = middlewares.With4(s.Config, s.Clock, s.Stripe, s.Cache, h)
 	// Register Sentry before Recover because it re-raises panics.
 	if s.Config.SentryDSN != "" {
 		h = Sentry(h)
@@ -55,8 +56,8 @@ func (s Server) RegisterEndpoints(mux *http.ServeMux) {
 
 func (s Server) getRouter() josh.Router {
 	router := josh.Router{
-		"/products":      {GET: wrapNoAuth(s, listProducts)},
-		"/goal":          {GET: wrapNoAuth(s, getGoal)},
+		"/products":      {GET: wrapNoAuth(s, withCache(10*time.Minute, listProducts))},
+		"/goal":          {GET: wrapNoAuth(s, withCache(5*time.Minute, getGoal))},
 		"/checkout":      {POST: wrap(s, withCustomer(checkoutOrder))},
 		"/order/{order}": {GET: wrap(s, withCustomer(getOrder))},
 		"/orders":        {GET: wrap(s, withCustomer(listOrders))},

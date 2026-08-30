@@ -6,10 +6,15 @@ import (
 )
 
 type Goal struct {
+	// How much money we received.
 	Reached int64 `json:"reached"`
-	Total   int64 `json:"total"`
+	// How much money we need to start the production.
+	Total int64 `json:"total"`
 }
 
+// GET /goal
+//
+// Get our financial goal and how much of it is reached.
 func getGoal(r josh.Req) josh.Resp {
 	client := josh.Must(josh.GetSingleton[*stripe.Client](r))
 	balance, err := client.V1Balance.Retrieve(r.Context(), nil)
