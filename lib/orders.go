@@ -68,6 +68,7 @@ func checkoutOrder(r josh.Req) josh.Resp {
 
 	pricesList, err := loadStripeList(client.V1Prices.List(r.Context(), &stripe.PriceListParams{
 		Active: new(true),
+		Expand: []*string{new("data.product")},
 	}))
 	if err != nil {
 		return ServerErrorR(r, "failed to list prices", err)
@@ -82,6 +83,11 @@ func checkoutOrder(r josh.Req) josh.Resp {
 		if price == nil {
 			return josh.BadRequest(josh.Error{
 				Detail: fmt.Sprintf("price for item #%d not found", i+1),
+			})
+		}
+		if price.Product.Metadata["out-of-stock"] == "true" {
+			return josh.BadRequest(josh.Error{
+				Detail: fmt.Sprintf("item #%d (%s) is out of stock", i+1, price.Product.Name),
 			})
 		}
 		lineItem := stripe.CheckoutSessionCreateLineItemParams{

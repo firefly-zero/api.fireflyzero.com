@@ -40,6 +40,11 @@ type Product struct {
 	// It's up to the client (frontend) to crop it to the right size.
 	Image *string `json:"image"`
 
+	// If true, the product is out of stock and cannot be purchased.
+	//
+	// However, it still should be displayed.
+	OutOfStock bool `json:"out_of_stock"`
+
 	// Product variants, like different t-shirt sizes.
 	//
 	// Every product has at least one variant.
@@ -179,6 +184,7 @@ func formatProduct(p *stripe.Product, prices []*stripe.Price) josh.Data[Product]
 			Slug:        p.Metadata["slug"],
 			Description: p.Description,
 			Image:       image,
+			OutOfStock:  p.Metadata["out-of-stock"] == "true",
 			Variants:    variants,
 			Products:    products,
 		},
