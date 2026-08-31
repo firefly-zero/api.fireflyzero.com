@@ -1,6 +1,8 @@
 # api.fireflyzero.com
 
-The source code for [api.fireflyzero.com](https://api.fireflyzero.com), the REST API powering [shop.fireflyzero.com](https://shop.fireflyzero.com). Written in Go, uses Supabase for auth and Stripe for payments.
+The source code for [api.fireflyzero.com](https://api.fireflyzero.com), the REST API powering [shop.fireflyzero.com](https://shop.fireflyzero.com).
+
+Written in Go, uses Supabase for auth and Stripe for payments.
 
 ## Stripe metadata
 
