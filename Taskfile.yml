@@ -54,10 +54,20 @@ tasks:
     cmds:
       - "{{.COMPOSE}} down {{.CLI_ARGS}}"
 
+  # Go commands
   serve:
     desc: run the dev server
     cmds:
       - go run ./bin/serve
+  stock:
+    desc: see how many units of each item were bought
+    cmds:
+      - go run ./bin/stock
+  orders:
+    desc: list unfulfilled orders
+    cmds:
+      - go run ./bin/orders
+
   token:
     desc: generate a new auth token
     cmds:
